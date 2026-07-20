@@ -1,4 +1,3 @@
-"""Tools for remote file IO using paramiko."""
 
 from __future__ import annotations
 
@@ -23,26 +22,6 @@ if TYPE_CHECKING:
 
 
 class FileClient:
-    """
-    Tool for performing operations on files.
-
-    The client is agnostic of whether file operations are happening locally or via SSH.
-    All operations have a ``host`` parameter that specifies which remote host the
-    operation should be performed on.
-
-    .. Note::
-        To use abbreviated host names without user information, the FileClient requires
-        the appropriate configuration to be defined in the ssh config file.
-
-    Parameters
-    ----------
-    key_filename : str or Path
-        Path to private key file (for remote connections only).
-    config_filename : str or Path
-        Path to OpenSSH config file defining host connection settings.
-    verbose : bool, defaults to False
-        Whether to log messages during file interactions.
-    """
 
     def __init__(
         self,
@@ -240,23 +219,17 @@ class FileClient:
         dest_filename = self.abspath(dest_filename, host=dest_host)
 
         if src_host is None and dest_host is None:
-            # copying on local machine
             shutil.copy2(src_filename, dest_filename)
         elif src_host is not None and dest_host is None:
-            # copying from remote to local
             self.get_sftp(src_host).get(str(src_filename), str(dest_filename))
         elif src_host is None and dest_host is not None:
-            # copying from local to remote
             self.get_sftp(dest_host).put(str(src_filename), str(dest_filename))
         elif src_host == dest_host:
-            # copying between the same remote machine.
             ssh = self.get_ssh(src_host)
             _, _, stderr = ssh.exec_command(f"cp {src_filename} {dest_filename}")
             if len(stderr.readlines()) > 0 and self.verbose:
                 warnings.warn(f"Copy command gave error: {stderr}", stacklevel=2)
         else:
-            # copying between two remote hosts; this is a pain and it is unlikely anyone
-            # will want to do it.
             raise ValueError(
                 "Copying between two different remote hosts is not supported."
             )
@@ -552,7 +525,6 @@ def get_ssh_connection(
     config: dict[str, Any] = {"hostname": hostname, "username": username}
     config_filename = Path(config_filename).expanduser()
     if Path(config_filename).exists():
-        # try reading ssh config file
         ssh_config = paramiko.SSHConfig().from_path(str(config_filename))
 
         host_config = ssh_config.lookup(hostname)  # type: ignore[attr-defined]
@@ -586,22 +558,10 @@ def auto_fileclient(method: Callable | None = None) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
-        @wraps(func)
-        def gen_file_client(*args, **kwargs) -> Any:
-            file_client = kwargs.get("file_client")
-            if file_client is None:
-                with FileClient() as file_client:
-                    kwargs["file_client"] = file_client
-                    return func(*args, **kwargs)
-            else:
-                return func(*args, **kwargs)
 
         return gen_file_client
 
-    # See if we're being called as @auto_fileclient or @auto_fileclient().
     if method is None:
-        # We're called with parens.
         return decorator
 
-    # We're called as @auto_fileclient without parens.
     return decorator(method)

@@ -1,4 +1,3 @@
-"""Define common testing utils used in atomate2."""
 
 from __future__ import annotations
 

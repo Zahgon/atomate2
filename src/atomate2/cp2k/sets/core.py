@@ -1,4 +1,3 @@
-"""Module defining core CP2K input set generators."""
 
 from __future__ import annotations
 
@@ -20,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class StaticSetGenerator(Cp2kInputGenerator):
-    """Class to generate CP2K static input sets."""
 
     def get_input_updates(self, *args, **kwargs) -> dict:
         """Get updates to the input for a static job."""
@@ -29,12 +27,6 @@ class StaticSetGenerator(Cp2kInputGenerator):
 
 @dataclass
 class RelaxSetGenerator(Cp2kInputGenerator):
-    """
-    Class to generate CP2K relax sets.
-
-    I.e., sets for optimization of internal coordinates without cell parameter
-    optimization.
-    """
 
     def get_input_updates(self, *args, **kwargs) -> dict:
         """Get updates to the input for a relax job."""
@@ -46,11 +38,6 @@ class RelaxSetGenerator(Cp2kInputGenerator):
 
 @dataclass
 class CellOptSetGenerator(Cp2kInputGenerator):
-    """
-    Class to generate CP2K cell optimization sets.
-
-    I.e., sets for optimization of both internal coordinates and the lattice vectors.
-    """
 
     def get_input_updates(self, *args, **kwargs) -> dict:
         """Get updates to the input for a cell opt job."""
@@ -62,7 +49,6 @@ class CellOptSetGenerator(Cp2kInputGenerator):
 
 @dataclass
 class HybridStaticSetGenerator(Cp2kInputGenerator):
-    """Class for generating static hybrid input sets."""
 
     def get_input_updates(self, structure: Structure, *args, **kwargs) -> dict:
         """Get input updates for a hybrid calculation."""
@@ -86,7 +72,6 @@ class HybridStaticSetGenerator(Cp2kInputGenerator):
 
 @dataclass
 class HybridRelaxSetGenerator(Cp2kInputGenerator):
-    """Class for generating hybrid relaxation input sets."""
 
     def get_input_updates(self, structure: Structure, *args, **kwargs) -> dict:
         """Get input updates for a hybrid calculation."""
@@ -111,7 +96,6 @@ class HybridRelaxSetGenerator(Cp2kInputGenerator):
 
 @dataclass
 class HybridCellOptSetGenerator(Cp2kInputGenerator):
-    """Class for generating hybrid cell optimization input sets."""
 
     def get_input_updates(self, structure: Structure, *args, **kwargs) -> dict:
         """Get input updates for a hybrid calculation."""
@@ -136,24 +120,6 @@ class HybridCellOptSetGenerator(Cp2kInputGenerator):
 
 @dataclass
 class NonSCFSetGenerator(Cp2kInputGenerator):
-    """
-    Class to generate CP2K non-self-consistent field input sets.
-
-    **Note** cp2k doesn't have a true non scf option. All you can do is set
-    max_scf to 1, and use a pre-converged wavefunction. While this seems to
-    be the same, it means that the kpoint grid used to generate the restart file
-    needs to be present in the input set or the first scf step can slightly jump
-    away from the minimum that was found.
-
-    Parameters
-    ----------
-    mode
-        Type of band structure mode. Options are "line", "uniform"
-    reciprocal_density
-        Density of k-mesh by reciprocal volume.
-    line_density
-        Line density for line mode band structure.
-    """
 
     mode: str = "line"
     reciprocal_density: float = 100
@@ -221,7 +187,6 @@ class NonSCFSetGenerator(Cp2kInputGenerator):
 
 @dataclass
 class MDSetGenerator(Cp2kInputGenerator):
-    """Class to generate molecular dynamics input sets."""
 
     def get_input_updates(self, structure: Structure, *args, **kwargs) -> dict:
         """Get input updates for running a MD calculation."""

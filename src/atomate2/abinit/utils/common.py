@@ -1,4 +1,3 @@
-"""Module with common file names and classes used for Abinit flows."""
 
 from __future__ import annotations
 
@@ -50,7 +49,6 @@ logger = logging.getLogger(__name__)
 
 
 class ErrorCode:
-    """Error code to classify the errors."""
 
     ERROR = "Error"
     UNRECOVERABLE = "Unrecoverable"
@@ -64,7 +62,6 @@ class ErrorCode:
 
 
 class AbiAtomateError(Exception):
-    """Base class for the abinit errors in atomate."""
 
     ERROR_CODE = ErrorCode.ERROR
 
@@ -78,12 +75,6 @@ class AbiAtomateError(Exception):
 
 
 class AbinitRuntimeError(AbiAtomateError):
-    """Exception raised for errors during Abinit calculation.
-
-    Contains the information about the errors and warning extracted from
-    the output files.
-    Initialized with a job, uses it to prepare a suitable error message.
-    """
 
     ERROR_CODE = ErrorCode.ERROR
 
@@ -120,8 +111,6 @@ class AbinitRuntimeError(AbiAtomateError):
             list of warnings in the abinit execution. Only used if job doesn't
             have a report.
         """
-        # This can handle both the cases of DECODE_MONTY=True and False
-        # (Since it has a from_dict method).
         super().__init__(msg)
         self.job = job
         if (
@@ -183,7 +172,6 @@ class AbinitRuntimeError(AbiAtomateError):
 
 
 class UnconvergedError(AbinitRuntimeError):
-    """Exception raised when a calculation didn't converge after the max restarts."""
 
     ERROR_CODE = ErrorCode.UNCONVERGED
 
@@ -278,42 +266,35 @@ class UnconvergedError(AbinitRuntimeError):
 
 
 class WalltimeError(AbiAtomateError):
-    """Exception raised when the calculation didn't complete in time."""
 
     ERROR_CODE = ErrorCode.WALLTIME
 
 
 class InitializationError(AbiAtomateError):
-    """Exception raised if errors are present during the initialization of the job."""
 
     ERROR_CODE = ErrorCode.INITIALIZATION
 
 
 class RestartError(InitializationError):
-    """Exception raised if errors show up during the set up of the restart."""
 
     ERROR_CODE = ErrorCode.RESTART
 
 
 class PostProcessError(AbiAtomateError):
-    """Exception raised if problems are encountered during the post processing."""
 
     ERROR_CODE = ErrorCode.POSTPROCESS
 
 
 class RestartInfo(MSONable):
-    """Object that contains the information about the restart of a job."""
 
     def __init__(self, previous_dir: Path | str, num_restarts: int = 0) -> None:
         self.previous_dir = previous_dir
-        # self.reset = reset
         self.num_restarts = num_restarts
 
     def as_dict(self) -> dict:
         """Create dictionary representation of the error."""
         return {
             "previous_dir": self.previous_dir,
-            # "reset": self.reset,
             "num_restarts": self.num_restarts,
             "@module": type(self).__module__,
             "@class": type(self).__name__,
@@ -324,19 +305,16 @@ class RestartInfo(MSONable):
         """Create instance of the error from its dictionary representation."""
         return cls(
             previous_dir=d["previous_dir"],
-            # reset=d["reset"],
             num_restarts=d["num_restarts"],
         )
 
     @property
     def prev_outdir(self) -> Directory:
-        """Get the Directory pointing to the output directory of the previous step."""
-        return Directory(os.path.join(self.previous_dir, OUTDIR_NAME))
+        pass
 
     @property
     def prev_indir(self) -> Directory:
-        """Get the Directory pointing to the input directory of the previous step."""
-        return Directory(os.path.join(self.previous_dir, INDIR_NAME))
+        pass
 
 
 def get_final_structure(dir_name: Path | str) -> Structure:
@@ -348,7 +326,6 @@ def get_final_structure(dir_name: Path | str) -> Structure:
     """
     gsr_path = Directory(os.path.join(dir_name, OUTDIR_NAME)).has_abiext("GSR")
     if gsr_path:
-        # Open the GSR file.
         try:
             gsr_file = GsrFile(gsr_path)
         except Exception:
@@ -358,7 +335,6 @@ def get_final_structure(dir_name: Path | str) -> Structure:
 
     ddb_path = Directory(os.path.join(dir_name, OUTDIR_NAME)).has_abiext("DDB")
     if ddb_path:
-        # Open the GSR file.
         try:
             ddb_file = DdbFile(ddb_path)
         except Exception:
@@ -401,14 +377,12 @@ def get_event_report(ofile: File, mpiabort_file: File) -> EventReport | None:
     if not ofile.exists:
         if not mpiabort_file.exists:
             return None
-        # ABINIT abort file without log!
 
         return parser.parse(mpiabort_file.path)
 
     try:
         report = parser.parse(ofile.path)
 
-        # Add events found in the ABI_MPIABORTFILE.
         if mpiabort_file.exists:
             logger.critical("Found ABI_MPIABORTFILE!")
             abort_report = parser.parse(mpiabort_file.path)
@@ -418,15 +392,12 @@ def get_event_report(ofile: File, mpiabort_file: File) -> EventReport | None:
                 if len(abort_report) != 1:
                     logger.critical("Found more than one event in ABI_MPIABORTFILE")
 
-                # Add it to the initial report only if it differs
-                # from the last one found in the main log file.
                 last_abort_event = abort_report[-1]
                 if report and last_abort_event != report[-1]:
                     report.append(last_abort_event)
                 else:
                     report.append(last_abort_event)
     except (ValueError, RuntimeError, Exception) as exc:  # noqa: BLE001
-        # Return a report with an error entry with info on the exception.
         logger.critical(f"{ofile}: Exception while parsing ABINIT events:\n {exc!s}")
         return parser.report_exception(ofile.path, exc)
     else:

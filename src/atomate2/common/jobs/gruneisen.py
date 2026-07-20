@@ -1,4 +1,3 @@
-"""Jobs for Grueneisen parameter computations."""
 
 from __future__ import annotations
 
@@ -88,16 +87,11 @@ def run_phonon_jobs(
         phonon_yaml_dirs = dict.fromkeys(("ground", "plus", "minus"), None)
         phonon_imaginary_modes = dict.fromkeys(("ground", "plus", "minus"), None)
         for st, struct in opt_struct.items():
-            # phonon run for all 3 optimized structures (ground state, expanded, shrunk)
             phonon_kwargs = {}
             if prev_calc_dir_argname is not None:
                 phonon_kwargs[prev_calc_dir_argname] = prev_dir_dict[st]
             phonon_job = phonon_maker.make(structure=struct, **phonon_kwargs)
             phonon_job.append_name(f" {st}")
-            # change default phonopy.yaml file name to ensure workflow can be
-            # run without having to create folders, thus
-            # prevent overwriting and easier to identify yaml file belong
-            # to corresponding phonon run
             phonon_job.jobs[-1].function_kwargs.update(
                 filename_phonopy_yaml=f"{st}_phonopy.yaml",
                 filename_band_yaml=f"{st}_phonon_band_structure.yaml",
@@ -106,7 +100,6 @@ def run_phonon_jobs(
                 filename_dos=f"{st}_phonon_dos.pdf",
             )
             jobs.append(phonon_job)
-            # store each phonon run task doc
             phonon_yaml_dirs[st] = phonon_job.output.jobdirs.taskdoc_run_job_dir
             phonon_imaginary_modes[st] = phonon_job.output.has_imaginary_modes
 

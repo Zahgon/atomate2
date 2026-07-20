@@ -1,4 +1,3 @@
-"""Module defining base abinit input set and generator."""
 
 from __future__ import annotations
 
@@ -48,17 +47,6 @@ logger = logging.getLogger(__name__)
 
 
 class AbinitInputSet(InputSet):
-    """
-    A class to represent a set of Abinit inputs.
-
-    Parameters
-    ----------
-    abinit_input
-        An AbinitInput object.
-    input_files
-        A list of input files needed for the calculation. The corresponding
-        file reading variables (ird***) should be present in the abinit_input.
-    """
 
     def __init__(
         self,
@@ -85,9 +73,6 @@ class AbinitInputSet(InputSet):
         zip_inputs: bool = False,
     ) -> None:
         """Write Abinit input files to a directory."""
-        # TODO: do we allow zipping ? not sure if it really makes sense for abinit as
-        #  the abinit input set also sets up links to previous files, sets up the
-        #  indir, outdir and tmpdir, ...
         self.inputs["abinit_input.json"] = json.dumps(
             jsanitize(self.abinit_input.as_dict())
         )
@@ -129,8 +114,7 @@ class AbinitInputSet(InputSet):
 
     @property
     def abinit_input(self) -> AbinitInput:
-        """Get the AbinitInput object."""
-        return self[INPUT_FILE_NAME]
+        pass
 
     @staticmethod
     def set_workdir(workdir: Path | str) -> tuple[Directory, Directory, Directory]:
@@ -140,12 +124,10 @@ class AbinitInputSet(InputSet):
         """
         workdir = os.path.abspath(workdir)
 
-        # Directories with input|output|temporary data.
         indir = Directory(os.path.join(workdir, INDIR_NAME))
         outdir = Directory(os.path.join(workdir, OUTDIR_NAME))
         tmpdir = Directory(os.path.join(workdir, TMPDIR_NAME))
 
-        # Create dirs for input, output and tmp data.
         indir.makedirs()
         outdir.makedirs()
         tmpdir.makedirs()
@@ -190,8 +172,7 @@ class AbinitInputSet(InputSet):
         return self.abinit_input.remove_vars(keys=keys, strict=strict)
 
     def runlevel(self) -> set[str]:
-        """Get the set of strings defining the calculation type."""
-        return self.abinit_input.runlevel
+        pass
 
     def set_structure(self, structure: Any) -> Structure:
         """Set the structure for this input set.
@@ -220,9 +201,7 @@ def as_pseudo_table(pseudos: str | Sequence[Pseudo]) -> PseudoTable:
     PseudoTable
         Table of pseudopotentials.
     """
-    # get the PseudoTable from the PseudoRepo
     if isinstance(pseudos, str):
-        # in case a single path to a pseudopotential file has been passed
         if os.path.isfile(pseudos):
             return PseudoTable(pseudos)
         pseudo_repo_name, table_name = pseudos.rsplit(":", 1)
@@ -240,61 +219,6 @@ def as_pseudo_table(pseudos: str | Sequence[Pseudo]) -> PseudoTable:
 
 @dataclass
 class AbinitInputGenerator(InputGenerator):
-    """
-    A class to generate Abinit input sets.
-
-    Parameters
-    ----------
-    factory
-        A callable that generates an AbinitInput or MultiDataset object.
-    calc_type
-        A short description of the calculation type
-    pseudos
-        Define the pseudopotentials that should be used for the calculation.
-        Can be an instance of a PseudoTable, a list of strings with the paths of
-        the pseudopotential files or a string with the name of a PseudoDojo table
-        (https://github.com/PseudoDojo/), followed by the accuracy of the pseudos
-        in that table, separated by a colon. This requires that the PseudoTable
-        is installed in the system.
-        Set to None if no pseudopotentials should be set, as coming from a previous
-        AbinitInput.
-    factory_kwargs
-        A dictionary to customize the values for the arguments of the factory
-        function.
-    user_abinit_settings
-        A dictionary that allows to set any Abinit variable in the AbinitInput
-        after it has been generated from the factory function. This will override
-        any value or default previously set. Set a value to None to remove it
-        from the input.
-    user_kpoints_settings
-        Allow user to override kpoints setting by supplying a dict. E.g.,
-        ``{"reciprocal_density": 1000}``. User can also supply a KSampling object.
-    restart_from_deps:
-        Defines the files that needs to be linked from previous calculations in
-        case of restart. The format is a tuple where each element is a list of
-        "|" separated run levels (as defined in the AbinitInput object) followed
-        by a colon and a list of "|" list of extensions of files that needs to
-        be linked. The runlevel defines the type of calculations from which the
-        file can be linked. An example is (f"{NSCF}:WFK",).
-    prev_outputs_deps
-        Defines the files that needs to be linked from previous calculations and
-        are required for the execution of the current calculation.
-        The format is a tuple where each element is a list of  "|" separated
-        run levels (as defined in the AbinitInput object) followed by a colon and
-        a list of "|" list of extensions of files that needs to be linked.
-        The runlevel defines the type of calculations from which the file can
-        be linked. An example is (f"{NSCF}:WFK",).
-    factory_prev_inputs_kwargs
-        A dictionary defining the source of the of one or more previous
-        AbinitInput in case they are required by a factory to build a new
-        AbinitInput. The key should match the name of the argument of the factory
-        function and the value should be a tuple with the runlevels of the
-        compatible types of AbinitInput that can be used.
-    force_gamma
-        Force gamma centered kpoint generation.
-    symprec
-        Tolerance for symmetry finding, used for line mode band structure k-points.
-    """
 
     factory: Callable
     calc_type: str = "abinit_calculation"
@@ -331,7 +255,6 @@ class AbinitInputGenerator(InputGenerator):
             Directory or list/tuple of directories needed as dependencies for the
                 AbinitInputSet generated.
         """
-        # Get the pseudos as a PseudoTable
         pseudos = as_pseudo_table(self.pseudos) if self.pseudos else None
 
         restart_from = self.check_format_prev_dirs(restart_from)
@@ -340,13 +263,9 @@ class AbinitInputGenerator(InputGenerator):
         all_irdvars = {}
         input_files = []
         if restart_from is not None:
-            # Use the previous abinit input
             abinit_input = load_abinit_input(restart_from[0])
-            # Update with the abinit input with the final structure
             structure = get_final_structure(restart_from[0])
             abinit_input.set_structure(structure=structure)
-            # Files for restart (e.g. continue a not yet converged
-            # scf/nscf/relax calculation)
             irdvars, files = self.resolve_deps(
                 restart_from, deps=self.restart_from_deps
             )
@@ -362,17 +281,13 @@ class AbinitInputGenerator(InputGenerator):
                 pseudos=pseudos,
                 prev_outputs=prev_outputs,
             )
-        # Always reset the ird variables.
         abinit_input.pop_irdvars()
 
-        # Files that are dependencies (e.g. band structure calculations
-        # need the density).
         if prev_outputs:
             irdvars, files = self.resolve_deps(prev_outputs, self.prev_outputs_deps)
             all_irdvars.update(irdvars)
             input_files.extend(files)
 
-        # Set ird variables and extra variables.
         abinit_input.set_vars(all_irdvars)
         abinit_input.set_vars(self.user_abinit_settings)
 
@@ -380,7 +295,6 @@ class AbinitInputGenerator(InputGenerator):
         abinit_input["outdata_prefix"] = (f'"{OUTDATA_PREFIX}"',)
         abinit_input["tmpdata_prefix"] = (f'"{TMPDATA_PREFIX}"',)
 
-        # TODO: where/how do we set up/pass down link_files ?
         return AbinitInputSet(
             abinit_input=abinit_input,
             input_files=input_files,
@@ -479,10 +393,7 @@ class AbinitInputGenerator(InputGenerator):
         inp_files = []
 
         for ext in exts:
-            # TODO: how to check that we have the files we need ?
-            #  Should we raise if don't find at least one file for a given extension ?
             if ext in ("1WF", "1DEN"):
-                # Special treatment for 1WF and 1DEN files
                 if ext == "1WF":
                     files = prev_outdir.find_1wf_files()
                 elif ext == "1DEN":
@@ -497,10 +408,6 @@ class AbinitInputGenerator(InputGenerator):
                     irdvars = irdvars_for_ext(ext)
                     break
             elif ext == "DEN":
-                # Special treatment for DEN files
-                # In case of relaxations or MD, there may be several TIM?_DEN files
-                # First look for the standard out_DEN file.
-                # If not found, look for the last TIM?_DEN file.
                 out_den = prev_outdir.path_in(f"{OUTDATAFILE_PREFIX}_DEN")
                 if os.path.exists(out_den):
                     irdvars = irdvars_for_ext("DEN")
@@ -576,8 +483,6 @@ class AbinitInputGenerator(InputGenerator):
                     f"No previous_outputs. Required for {type(self).__name__}."
                 )
 
-            # TODO consider cases where structure might be defined even if
-            # factory_prev_inputs_kwargs is present.
             if structure is not None:
                 raise RuntimeError(
                     "Structure not supported if factory_prev_inputs_kwargs is defined"
@@ -622,8 +527,6 @@ class AbinitInputGenerator(InputGenerator):
         if self.user_abinit_settings:
             generated_input.set_vars(self.user_abinit_settings)
 
-        # remove the None values. They will not be printed in the input file
-        # but can cause issues when checking if the values are present in the input.
         self._clean_none(generated_input)
 
         return generated_input
@@ -692,7 +595,6 @@ class AbinitInputGenerator(InputGenerator):
         """Get the kpoints file."""
         kpoints_updates = {} if kpoints_updates is None else kpoints_updates
 
-        # use user setting if set otherwise default to base config settings
         if self.user_kpoints_settings != {}:
             kconfig = copy.deepcopy(self.user_kpoints_settings)
         elif kpoints_updates:
@@ -712,7 +614,6 @@ class AbinitInputGenerator(InputGenerator):
 
         base_kpoints = None
         if kconfig.get("line_density"):
-            # handle line density generation
             kpath = HighSymmKpath(structure, **kconfig.get("kpath_kwargs", {}))
             frac_k_points, _k_points_labels = kpath.get_kpoints(
                 line_density=kconfig["line_density"], coords_are_cartesian=False
@@ -725,7 +626,6 @@ class AbinitInputGenerator(InputGenerator):
                 comment="Non SCF run along symmetry lines",
             )
         elif kconfig.get("grid_density") or kconfig.get("reciprocal_density"):
-            # handle regular weighted k-point grid generation
             if kconfig.get("grid_density"):
                 vasp_kpoints = Kpoints.automatic_density(
                     structure, int(kconfig["grid_density"]), self.force_gamma
@@ -759,8 +659,6 @@ class AbinitInputGenerator(InputGenerator):
                     comment="Uniform grid",
                 )
             else:
-                # if not explicit that means no other options have been specified
-                # so we can return the k-points as is
                 return base_kpoints
 
         added_kpoints = None
@@ -778,7 +676,6 @@ class AbinitInputGenerator(InputGenerator):
         if added_kpoints and not base_kpoints:
             return added_kpoints
 
-        # do some sanity checking
         if not (base_kpoints or added_kpoints):
             raise ValueError("Invalid k-point generation algo.")
 

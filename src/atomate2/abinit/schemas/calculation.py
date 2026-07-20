@@ -1,4 +1,3 @@
-"""Schemas for Abinit calculation objects."""
 
 from __future__ import annotations
 
@@ -22,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 
 class TaskState(ValueEnum):
-    """Abinit calculation state."""
 
     SUCCESS = "successful"
     FAILED = "failed"
@@ -30,7 +28,6 @@ class TaskState(ValueEnum):
 
 
 class AbinitObject(ValueEnum):
-    """Types of Abinit data objects."""
 
     DOS = "dos"
     BAND_STRUCTURE = "band_structure"
@@ -40,31 +37,6 @@ class AbinitObject(ValueEnum):
 
 
 class CalculationOutput(BaseModel):
-    """Document defining Abinit calculation outputs.
-
-    Parameters
-    ----------
-    energy: float
-        The final total DFT energy for the calculation
-    energy_per_atom: float
-        The final DFT energy per atom for the calculation
-    structure: Structure
-        The final pymatgen Structure of the system
-    efermi: float
-        The Fermi level from the calculation in eV
-    forces: List[Vector3D]
-        Forces acting on each atom
-    stress: Matrix3D
-        The stress on the cell
-    is_metal: bool
-        Whether the system is metallic
-    bandgap: float
-        The band gap from the calculation in eV
-    cbm: float
-        The conduction band minimum in eV (if system is not metallic
-    vbm: float
-        The valence band maximum in eV (if system is not metallic)
-    """
 
     energy: float = Field(
         None, description="The final total DFT energy for the calculation"
@@ -121,7 +93,6 @@ class CalculationOutput(BaseModel):
         """
         structure = output.structure  # final structure by default for GSR
 
-        # In case no conduction bands were included
         try:
             cbm = output.ebands.get_edge_state("cbm").eig
             bandgap = output.ebands.fundamental_gaps[
@@ -160,24 +131,6 @@ class CalculationOutput(BaseModel):
 
 
 class Calculation(BaseModel):
-    """Full Abinit calculation inputs and outputs.
-
-    Parameters
-    ----------
-    dir_name: str
-        The directory for this Abinit calculation
-    abinit_version: str
-        Abinit version used to perform the calculation
-    has_abinit_completed: .TaskState
-        Whether Abinit completed the calculation successfully
-    output: .CalculationOutput
-        The Abinit calculation output
-    completed_at: str
-        Timestamp for when the calculation was completed
-    output_file_paths: Dict[str, str]
-        Paths (relative to dir_name) of the Abinit output files
-        associated with this calculation
-    """
 
     dir_name: str = Field(None, description="The directory for this Abinit calculation")
     abinit_version: str = Field(
@@ -243,11 +196,6 @@ class Calculation(BaseModel):
 
         report = None
         has_abinit_completed = TaskState.FAILED
-        # TODO: How to detect which status it has here ?
-        #  UNCONVERGED would be for scf/nscf/relax when it's not yet converged
-        #  FAILED should be for a job that failed for other reasons.
-        #  What about a job that has been killed by the run_abinit (i.e. before
-        #  Slurm or PBS kills it) ?
 
         try:
             report = get_event_report(

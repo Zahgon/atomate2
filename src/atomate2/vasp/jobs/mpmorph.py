@@ -1,4 +1,3 @@
-"""Jobs that compose MPMorph flows."""
 
 from __future__ import annotations
 
@@ -23,32 +22,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class BaseMPMorphMDMaker(MDMaker):
-    """
-    Maker to create VASP molecular dynamics jobs for amorphous materials.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .VaspInputSetGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_vasp_input_set`.
-    copy_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_vasp_outputs`.
-    run_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_vasp`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "MPMorph MD Maker"
     input_set_generator: VaspInputGenerator = field(
@@ -58,30 +31,6 @@ class BaseMPMorphMDMaker(MDMaker):
 
 @dataclass
 class SlowQuenchVaspMaker(SlowQuenchMaker):
-    """Slow quench from high to low temperature structures using VASP MDMaker.
-
-    Quenches a provided structure with a molecular dynamics run from a
-    desired high temperature to a desired low temperature.
-    Flow creates a series of MD runs that holds at a certain temperature
-    and initiates the following MD run at a lower temperature (step-wise
-    temperature MD runs).
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    md_maker :  BaseMPMorphMDMaker
-        MDMaker to generate the molecular dynamics jobs specifically for MPMorph AIMD;
-        inherits  from MDMaker (VASP)
-    quench_start_temperature : float = 3000
-        Starting temperature for quench; default 3000K
-    quench_end_temperature : float = 500
-        Ending temperature for quench; default 500K
-    quench_temperature_step : int = 500
-        Temperature step for quench; default 500K drop
-    quench_n_steps : int = 1000
-        Number of steps for quench; default 1000 steps
-    """
 
     name: str = "vasp slow quench"
     md_maker: BaseVaspMaker = field(default_factory=BaseMPMorphMDMaker)
@@ -125,27 +74,6 @@ class SlowQuenchVaspMaker(SlowQuenchMaker):
 
 @dataclass
 class FastQuenchVaspMaker(FastQuenchMaker):
-    """Fast quench from high temperature to 0K structures with VASP.
-
-    Quenches a provided structure with a single (or double) relaxation
-    and a static calculation at 0K.
-
-    NOTE: By default, same as atomate2.vasp.flows.mp.MPGGADoubleRelaxMaker.
-    This exists for the user to structure a FastQuenchMaker more easily.
-    This is built for consistency with MPMorph flows.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker :  ForceFieldRelaxMaker
-        Relax Maker
-    relax_maker2 :  ForceFieldRelaxMaker
-        Relax Maker for a second relaxation; useful for tighter convergence
-    static_maker : ForceFieldStaticMaker
-        Static Maker
-
-    """
 
     name: str = "Vasp fast quench"
     relax_maker: BaseVaspMaker = field(default_factory=MPGGARelaxMaker)

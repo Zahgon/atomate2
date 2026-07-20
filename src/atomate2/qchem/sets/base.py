@@ -1,4 +1,3 @@
-"""Module defining base QChem input set and generator."""
 
 from __future__ import annotations
 
@@ -19,23 +18,9 @@ __author__ = "Alex Ganose, Ryan Kingsbury, Rishabh D Guha"
 __copyright__ = "Copyright 2018-2022, The Materials Project"
 __version__ = "0.1"
 
-# _BASE_QCHEM_SET =
-# loadfn(resource_filename("atomate2.qchem.sets", "BaseQchemSet.yaml"))
 
 
 class QCInputSet(InputSet):
-    """
-    A class to represent a QChem input file as a QChem InputSet.
-
-    Parameters
-    ----------
-    qcinput
-        A QCInput object
-    optional_files
-        Any other optional input files supplied as a dict of ``{filename: object}``.
-        The objects should follow standard pymatgen conventions in
-        implementing an ``as_dict()`` and ``from_dict()`` method.
-    """
 
     def __init__(
         self,
@@ -68,7 +53,6 @@ class QCInputSet(InputSet):
         for key, val in inputs.items():
             inp_key = "mol.qin" if key == "Input_Dict" else f"{key}.qin"
             if val is not None and (overwrite or not (directory / inp_key).exists()):
-                # should this be open instead of zopen? can QChem inputs be gzipped?
                 with zopen(directory / inp_key, "wt") as file:
                     file.write(str(val))
             elif not overwrite and (directory / inp_key).exists():
@@ -103,126 +87,10 @@ class QCInputSet(InputSet):
 
         return QCInputSet(inputs["input_dict"], optional_files=optional_inputs)
 
-        # Todo
-        # Implement is_valid property
 
 
 @dataclass
 class QCInputGenerator(InputGenerator):
-    """
-    A dataclass to generate QChem input set.
-
-    Parameters
-    ----------
-    job_type : str
-        QChem job type to run. Valid options are "opt" for optimization,
-        "sp" for single point, "freq" for frequency calculation, or "force" for
-        force evaluation.
-
-    basis_set : str
-        Basis set to use. For example, "def2-tzvpd".
-
-    scf_algorithm : str
-        Algorithm to use for converging the SCF. Recommended choices are
-        "DIIS", "GDM", and "DIIS_GDM". Other algorithms supported by Qchem's
-        GEN_SCFMAN module will also likely perform well.
-        Refer to the QChem manual for further details.
-
-    dft_rung : int
-        Select the DFT functional among 5 recommended levels of theory,
-        in order of increasing accuracy/cost. 1 = SPW92, 2 = B97-D3(BJ), 3 = B97M-V,
-        4 = ωB97M-V, 5 = ωB97M-(2). (Default: 4)
-        To set a functional not given by one of the above, set the overwrite_inputs
-        argument to {"method":"<NAME OF FUNCTIONAL>"}
-        **Note that the "rungs" in this argument do NOT correspond to rungs on "Jacob's
-        Ladder of Density Functional Approximations"**
-
-    pcm_dielectric : float
-        Dielectric constant to use for PCM implicit solvation model. (Default: None)
-
-    smd_solvent : str
-        Solvent to use for SMD implicit solvation model. (Default: None)
-        Examples include "water", "ethanol", "methanol", and "acetonitrile".
-        Refer to the QChem manual for a complete list of solvents available.
-        To define a custom solvent, set this argument to "custom" and
-        populate custom_smd with the necessary parameters.
-
-        **Note that only one of smd_solvent and pcm_dielectric may be set.**
-
-    custom_smd : str
-        List of parameters to define a custom solvent in SMD. (Default: None)
-        Must be given as a string of seven comma separated values
-        in the following order:
-        "dielectric, refractive index, acidity, basicity,
-        surface tension, aromaticity, electronegative halogenicity"
-        Refer to the QChem manual for further details.
-
-    opt_dict : dict
-        A dictionary of opt sections, where each opt section is a key
-        and the corresponding values are a list of strings. Strings must be formatted
-        as instructed by the QChem manual.
-        The different opt sections are: CONSTRAINT, FIXED, DUMMY, and CONNECT.
-        Ex.
-        opt =
-        {"CONSTRAINT": ["tors 2 3 4 5 25.0", "tors 2 5 7 9 80.0"], "FIXED": ["2 XY"]}
-
-    scan_dict : dict
-        A dictionary of scan variables. Because two constraints of the
-        same type are allowed (for instance, two torsions or two bond stretches),
-        each TYPE of variable (stre, bend, tors) should be its own key in the dict,
-        rather than each variable. Note that the total number of variable
-        (sum of lengths of all lists) CANNOT be more than two.
-        Ex. scan_variables =
-        {"stre": ["3 6 1.5 1.9 0.1"], "tors": ["1 2 3 4 -180 180 15"]}
-
-    max_scf_cycles : int
-        Maximum number of SCF iterations. (Default: 100)
-
-    geom_opt_max_cycles : int
-        Maximum number of geometry optimization iterations. (Default: 200)
-
-    plot_cubes : bool
-        Whether to write CUBE files of the electron density. (Default: False)
-
-    nbo_params : dict
-        A dict containing the desired NBO params. Note that a key:value pair of
-        "version":7 will trigger NBO7 analysis.
-        Otherwise, NBO5 analysis will be performed,
-        including if an empty dict is passed.
-        Besides a key of "version", all other key:value pairs
-        will be written into the $nbo section of the QChem input file. (Default: False)
-
-    new_geom_opt : dict
-        A dict containing parameters for the $geom_opt section of the QChem
-        input file, which control the new geometry optimizer
-        available starting in version 5.4.2.
-        Further note that even passing an empty dictionary
-        will trigger the new optimizer.
-        (Default: False)
-
-    overwrite_inputs : dict
-        Dictionary of QChem input sections to add or overwrite variables.
-        The currently available sections (keys) are rem, pcm, solvent, smx, opt,
-        scan, van_der_waals, and plots. The value of each key is a dictionary
-        of key value pairs relevant to that section.
-        For example, to add a new variable to the rem section that sets
-        symmetry to false, use
-        overwrite_inputs = {"rem": {"symmetry": "false"}}
-        **Note that if something like basis is added to the rem dict it will overwrite
-        the default basis.**
-        **Note that supplying a van_der_waals section here will automatically modify
-        the PCM "radii" setting to "read".**
-        **Note that all keys must be given as strings, even when they are numbers!**
-
-    vdw_mode : str
-        Method of specifying custom van der Waals radii.
-        Either "atomic" (default) or "sequential".
-        In "atomic" mode, dict keys represent the atomic number
-        associated with each radius (e.g., 12 = carbon).
-        In "sequential" mode, dict keys represent the sequential position
-        of a single specific atom in the input structure.
-
-    """
 
     job_type: str = field(default=None)
     basis_set: str = field(default=None)
@@ -380,7 +248,6 @@ class QCInputGenerator(InputGenerator):
                     temp_vdw = lower_and_check_unique(sub_dict)
                     for k, v in temp_vdw.items():
                         self.vdw_dict[k] = v
-                    # set the PCM section to read custom radii
                     self.pcm_dict["radii"] = "read"
                 if sub == "plots":
                     temp_plots = lower_and_check_unique(sub_dict)

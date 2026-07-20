@@ -1,4 +1,3 @@
-"""General schemas for Grueneisen parameter workflow outputs."""
 
 import logging
 from pathlib import Path
@@ -29,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 
 class GruneisenInputDirs(BaseModel):
-    """Collection with all input directories relevant for the Grueneisen run."""
 
     ground: str | None = Field(
         None, description="The directory with ground state structure phonopy yaml"
@@ -43,10 +41,6 @@ class GruneisenInputDirs(BaseModel):
 
 
 class PhononRunsImaginaryModes(BaseModel):
-    """Collection with information whether structure has imaginary modes.
-
-    Information extracted from phonon run for ground, expanded and contracted structures
-    """
 
     ground: bool | None = Field(
         None, description="if true, ground state structure has imaginary modes"
@@ -60,7 +54,6 @@ class PhononRunsImaginaryModes(BaseModel):
 
 
 class GruneisenDerivedProperties(BaseModel):
-    """Collection of data derived from the Grueneisen workflow."""
 
     average_gruneisen: float | None = Field(
         None, description="The average Grueneisen parameter"
@@ -73,7 +66,6 @@ class GruneisenDerivedProperties(BaseModel):
 
 
 class GruneisenParameterDocument(StructureMetadata):
-    """Collection to data from the Grueneisen computation."""
 
     code: str = Field("String describing the code for the computation")
     gruneisen_parameter_inputs: GruneisenInputDirs = Field(
@@ -165,7 +157,6 @@ class GruneisenParameterDocument(StructureMetadata):
                 ),
             )
         else:
-            # kpoint mesh relative to primitive cell
             kpoint = Kpoints.automatic_density(
                 structure=get_pmg_structure(ground.primitive),
                 kppa=mesh,
@@ -200,7 +191,6 @@ class GruneisenParameterDocument(StructureMetadata):
             units=compute_gruneisen_param_kwargs.get("units", "thz"),
             img_format=compute_gruneisen_param_kwargs.get("img_format", "pdf"),
         )
-        # get phonon band structure
         kpath_dict, kpath_concrete = PhononBSDOSDoc.get_kpath(
             structure=structure, kpath_scheme=kpath_scheme, symprec=symprec
         )

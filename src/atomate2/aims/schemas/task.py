@@ -1,4 +1,3 @@
-"""A definition of a MSON document representing an FHI-aims task."""
 
 from __future__ import annotations
 
@@ -27,19 +26,6 @@ logger = logging.getLogger(__name__)
 
 
 class AnalysisDoc(BaseModel):
-    """Calculation relaxation summary.
-
-    Parameters
-    ----------
-    delta_volume: float
-        Absolute change in volume
-    delta_volume_as_percent: float
-        Percentage change in volume
-    max_force: float
-        Maximum force on the atoms
-    errors: List[str]
-        Errors from the FHI-aims output
-    """
 
     delta_volume: float | None = Field(None, description="Absolute change in volume")
     delta_volume_as_percent: float | None = Field(
@@ -81,19 +67,6 @@ class AnalysisDoc(BaseModel):
 
 
 class InputDoc(BaseModel):
-    """Summary of inputs for an FHI-aims calculation.
-
-    Parameters
-    ----------
-    structure: Structure or Molecule
-        The input pymatgen Structure or Molecule of the system
-    species_info: .SpeciesSummary
-        Summary of the species defaults used for each atom kind
-    parameters: dict[str, Any]
-        The parameters passed in the control.in file
-    xc: str
-        Exchange-correlation functional used if not the default
-    """
 
     structure: Structure | Molecule = Field(
         None, description="The input structure object"
@@ -136,31 +109,6 @@ class InputDoc(BaseModel):
 
 
 class OutputDoc(BaseModel):
-    """Summary of the outputs for an FHI-aims calculation.
-
-    Parameters
-    ----------
-    structure: Structure or Molecule
-        The final pymatgen Structure or Molecule of the final system
-    trajectory: List[Structure or Molecule]
-        The trajectory of output structures
-    energy: float
-        The final total DFT energy for the last calculation
-    energy_per_atom: float
-        The final DFT energy per atom for the last calculation
-    bandgap: float
-        The DFT bandgap for the last calculation
-    cbm: float
-        CBM for this calculation
-    vbm: float
-        VBM for this calculation
-    forces: List[Vector3D]
-        Forces on atoms from the last calculation
-    stress: Matrix3D
-        Stress on the unit cell from the last calculation
-    all_forces: List[List[Vector3D]]
-        Forces on atoms from all calculations.
-    """
 
     structure: Structure | Molecule = Field(
         None, description="The output structure object"
@@ -218,27 +166,6 @@ class OutputDoc(BaseModel):
 
 
 class ConvergenceSummary(BaseModel):
-    """Summary of the outputs for an FHI-aims convergence calculation.
-
-    Parameters
-    ----------
-    structure: Structure or Molecule
-        The output structure object
-    converged: bool
-        Is convergence achieved?
-    convergence_criterion_name: str
-        The output name of the convergence criterion
-    convergence_field_name: str
-        The name of the input setting to study convergence against
-    convergence_criterion_value: float
-        The output value of the convergence criterion
-    convergence_field_value: Any
-        The last value of the input setting to study convergence against
-    asked_epsilon: float
-        The difference in the values for the convergence criteria that was asked for
-    actual_epsilon: float
-        The actual difference in the convergence criteria values
-    """
 
     structure: Structure | Molecule = Field(
         None, description="The pymatgen object of the output structure"
@@ -345,55 +272,6 @@ class ConvergenceSummary(BaseModel):
 
 
 class AimsTaskDoc(BaseTaskDocument, StructureMetadata, MoleculeMetadata):
-    """Definition of FHI-aims task document.
-
-    Parameters
-    ----------
-    calc_code: str
-        The calculation code used to compute the task
-    dir_name: str
-        The directory for this FHI-aims task
-    last_updated: str
-        Timestamp for this task document was last updated
-    completed: bool
-        Whether this calculation completed
-    completed_at: str
-        Timestamp for when this task was completed
-    input: .InputDoc
-        The input to the first calculation
-    output: .OutputDoc
-        The output of the final calculation
-    structure: Structure or Molecule
-        Final output structure from the task
-    state: .TaskState
-        State of this task
-    included_objects: List[.AimsObject]
-        List of FHI-aims objects included with this task document
-    aims_objects: Dict[.AimsObject, Any]
-        FHI-aims objects associated with this task
-    entry: ComputedEntry
-        The ComputedEntry from the task doc
-    analysis: .AnalysisDoc
-        Summary of structural relaxation and forces
-    task_label: str
-        A description of the task
-    tags: List[str]
-        Metadata tags for this task document
-    author: str
-        Author extracted from transformations
-    icsd_id: str
-        International crystal structure database id of the structure
-    calcs_reversed: List[.Calculation]
-        The inputs and outputs for all FHI-aims runs in this task.
-    transformations: Dict[str, Any]
-        Information on the structural transformations, parsed from a
-        transformations.json file
-    custodian: Any
-        Information on the custodian settings used to run this
-        calculation, parsed from a custodian.json file
-    additional_json: Dict[str, Any]
-        Additional json loaded from the calculation directory
-    """
 
     calc_code: str = "aims"
     dir_name: str = Field(None, description="The directory for this FHI-aims task")
@@ -504,14 +382,11 @@ class AimsTaskDoc(BaseTaskDocument, StructureMetadata, MoleculeMetadata):
 
         dir_name = get_uri(dir_name)  # convert to full uri path
 
-        # only store objects from last calculation
-        # TODO: make this an option
         aims_objects = all_aims_objects[-1]
         included_objects = None
         if aims_objects:
             included_objects = list(aims_objects.keys())
 
-        # rewrite the original structure save!
 
         data = {
             "structure": calcs_reversed[-1].output.structure,
@@ -556,8 +431,6 @@ class AimsTaskDoc(BaseTaskDocument, StructureMetadata, MoleculeMetadata):
             "composition": calc_docs[-1].output.structure.formula,
             "energy": calc_docs[-1].output.energy,
             "parameters": {
-                # Required to be compatible with MontyEncoder for the ComputedEntry
-                # "run_type": str(calc_docs[-1].run_type),
                 "run_type": "AIMS run"
             },
             "data": {
@@ -566,9 +439,6 @@ class AimsTaskDoc(BaseTaskDocument, StructureMetadata, MoleculeMetadata):
         }
         return ComputedEntry.from_dict(entry_dict)
 
-    # TARP: This is done because the mangnetism schema assume that VASP
-    #       TaskTypes are used. I think this should be changed, but that
-    #       would require modifications in emmet
     @property
     def task_type(self) -> TaskType:
         """Get the task type of the calculation."""
@@ -617,7 +487,6 @@ def _find_aims_files(
         aims_files: dict[str, list[str | Path] | Path | str] = {}
         vol_files: list[str | Path] = []
         for file in files:
-            # Here we make assumptions about the output file naming
             if file.match(f"*aims.out{suffix}*"):
                 aims_files["aims_output_file"] = Path(file).name
         for vol in volumetric_files:
@@ -626,7 +495,6 @@ def _find_aims_files(
                 vol_files.append(_files[0])
 
         if len(vol_files) > 0:
-            # add volumetric files if some were found or other cp2k files were found
             aims_files["volumetric_files"] = vol_files
 
         return aims_files
@@ -635,16 +503,13 @@ def _find_aims_files(
         subfolder_match = list(path.glob(f"{task_name}/*"))
         suffix_match = list(path.glob(f"*.{task_name}*"))
         if len(subfolder_match) > 0:
-            # subfolder match
             task_files[task_name] = _get_task_files(subfolder_match)
         elif len(suffix_match) > 0:
-            # try extension schema
             task_files[task_name] = _get_task_files(
                 suffix_match, suffix=f".{task_name}"
             )
 
     if len(task_files) == 0:
-        # get any matching file from the root folder
         standard_files = _get_task_files(list(path.glob("*")))
         if len(standard_files) > 0:
             task_files["standard"] = standard_files

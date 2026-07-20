@@ -1,4 +1,3 @@
-"""Functions to run LOBSTER."""
 
 from __future__ import annotations
 
@@ -28,12 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 class JobType(ValueEnum):
-    """
-    Type of Lobster job.
-
-    - ``DIRECT``: Run Lobster without custodian.
-    - ``NORMAL``: Normal custodian :obj:`.LobsterJob`.
-    """
 
     DIRECT = "direct"
     NORMAL = "normal"

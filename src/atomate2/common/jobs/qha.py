@@ -1,4 +1,3 @@
-"""Jobs for running QHA calculations."""
 
 from __future__ import annotations
 
@@ -121,8 +120,6 @@ def analyze_free_energy(
     kwargs: dict
         Additional keywords to pass to this job
     """
-    # only add free energies if there are no imaginary modes
-    # tolerance has to be tested
     electronic_energies: list[list[float]] = []
     free_energies: list[list[float]] = []
     heat_capacities: list[list[float]] = []
@@ -144,17 +141,14 @@ def analyze_free_energy(
         entropies.append([])
 
         for _, output in sorted(zip(volume, phonon_outputs, strict=True)):
-            # check if imaginary modes
             if (not output.has_imaginary_modes) or ignore_imaginary_modes:
                 electronic_energies[itemp].append(output.total_dft_energy)
-                # convert from J/mol in kJ/mol
                 free_energies[itemp].append(output.free_energies[itemp] / 1000.0)
                 heat_capacities[itemp].append(output.heat_capacities[itemp])
                 entropies[itemp].append(output.entropies[itemp])
                 sorted_volume.append(output.volume_per_formula_unit)
                 formula_units.append(output.formula_units)
 
-    # potentially implement a space group check in the future
 
     if len(set(formula_units)) != 1:
         raise ValueError("There should be only one formula unit.")

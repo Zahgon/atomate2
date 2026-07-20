@@ -1,4 +1,3 @@
-"""File I/O functions for LAMMPS input files."""
 
 from pathlib import Path
 from typing import Any, Literal
@@ -30,20 +29,6 @@ def write_lammps_input_set(
 
 
 class DumpConvertor:
-    """
-    Class to convert LAMMPS dump files to pymatgen or ase Trajectory objects.
-
-    args:
-        dumpfile : str
-            Path to the LAMMPS dump file
-        store_md_outputs : StoreTrajectoryOption
-            Option to store MD outputs in the Trajectory object
-        read_index : str | int
-            Index of the frame to read from the dump file
-            (default is ':', i.e. read all frames).
-            Use an integer to read a specific frame (practical for large files).
-
-    """
 
     def __init__(
         self,

@@ -1,4 +1,3 @@
-"""Core VASP flows."""
 
 from __future__ import annotations
 
@@ -30,18 +29,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class DoubleRelaxMaker(Maker):
-    """
-    Maker to perform a double CP2K relaxation.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker1 : .BaseCp2kMaker
-        Maker to use to generate the first relaxation.
-    relax_maker2 : .BaseCp2kMaker
-        Maker to use to generate the second relaxation.
-    """
 
     name: str = "double relax"
     relax_maker1: Maker = field(default_factory=RelaxMaker)
@@ -89,23 +76,6 @@ class DoubleRelaxMaker(Maker):
 
 @dataclass
 class BandStructureMaker(Maker):
-    """
-    Maker to generate Cp2k band structures.
-
-    This is a static calculation followed by two non-self-consistent field calculations,
-    one uniform and one line mode.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    bandstructure_type : str
-        The type of band structure to generate. Options are "line", "uniform" or "both".
-    static_maker : .BaseCp2kMaker
-        The maker to use for the static calculation.
-    bs_maker : .BaseCp2kMaker
-        The maker to use for the non-self-consistent field calculations.
-    """
 
     name: str = "band structure"
     bandstructure_type: str = "both"
@@ -168,20 +138,6 @@ class BandStructureMaker(Maker):
 
 @dataclass
 class RelaxBandStructureMaker(Maker):
-    """
-    Make to create a flow with a relaxation and then band structure calculations.
-
-    By default, this workflow generates relaxations using the :obj:`.DoubleRelaxMaker`.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker : .BaseCp2kMaker
-        The maker to use for the static calculation.
-    band_structure_maker : .BaseCp2kMaker
-        The maker to use for the line and uniform band structure calculations.
-    """
 
     name: str = "relax and band structure"
     relax_maker: Maker = field(default_factory=DoubleRelaxMaker)
@@ -212,23 +168,6 @@ class RelaxBandStructureMaker(Maker):
 
 @dataclass
 class HybridFlowMaker(Maker):
-    """
-    Maker to create hybrid flows.
-
-    Parameters
-    ----------
-    hybrid_functional
-        built-in hybrid functional to use
-    initialize_with_pbe
-        Whether or not to attach a pre-hybrid flow that can be used to
-        kickstart the hybrid flow. This is treated differently than just
-        stitching flows together, because of the screening done in
-        __post_init__
-    pbe_maker
-        Maker for the initialization
-    hybrid_maker
-        Maker for the hybrid job
-    """
 
     hybrid_functional: str = "PBE0"
     initialize_with_pbe: bool = field(default=True)
@@ -288,36 +227,12 @@ class HybridFlowMaker(Maker):
 
 @dataclass
 class HybridStaticFlowMaker(HybridFlowMaker):
-    """
-    Maker to perform a PBE restart to hybrid static flow.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    pbe_maker : .BaseCp2kMaker
-        Maker to use to generate PBE restart file for hybrid calc
-    hybrid_maker : .BaseCp2kMaker
-        Maker to use to generate the second relaxation.
-    """
 
     name: str = "hybrid static flow"
 
 
 @dataclass
 class HybridRelaxFlowMaker(HybridFlowMaker):
-    """
-    Maker to perform a PBE restart to hybrid relax flow.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    pbe_maker : .BaseCp2kMaker
-        Maker to use to generate PBE restart file for hybrid calc
-    hybrid_maker : .BaseCp2kMaker
-        Maker to use to generate the second relaxation.
-    """
 
     name: str = "hybrid relax flow"
     hybrid_maker: Maker = field(default_factory=HybridRelaxMaker)
@@ -325,18 +240,6 @@ class HybridRelaxFlowMaker(HybridFlowMaker):
 
 @dataclass
 class HybridCellOptFlowMaker(HybridFlowMaker):
-    """
-    Maker to perform a PBE restart to hybrid cell opt flow.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    pbe_maker : .BaseCp2kMaker
-        Maker to use to generate PBE restart file for hybrid calc
-    hybrid_maker : .BaseCp2kMaker
-        Maker to use to generate the second relaxation.
-    """
 
     name: str = "hybrid cell opt flow"
     hybrid_maker: Maker = field(default_factory=HybridCellOptMaker)

@@ -1,4 +1,3 @@
-"""Module defining functions for manipulating lobster files."""
 
 from __future__ import annotations
 
@@ -99,7 +98,6 @@ def copy_lobster_files(
     logger.info(f"Copying LOBSTER inputs from {src_dir}")
     directory_listing = file_client.listdir(src_dir, host=src_host)
 
-    # find optional files
     files = []
     for file in VASP_OUTPUT_FILES:
         found_file = get_zfile(directory_listing, file, allow_missing=True)

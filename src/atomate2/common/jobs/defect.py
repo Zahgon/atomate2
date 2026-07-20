@@ -1,4 +1,3 @@
-"""Jobs for defect calculations."""
 
 from __future__ import annotations
 
@@ -33,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 
 class CCDInput(BaseModel):
-    """Document model to help construct CCDDocument."""
 
     structure: Structure
     energy: float
@@ -101,18 +99,15 @@ def spawn_energy_curve_calcs(
     jobs = []
     outputs = []
 
-    # add the static job for the reference structure
     static_maker.make(relaxed_structure)
     s_distortions = sorted(distortions)
     distorted_structures = relaxed_structure.interpolate(
         distorted_structure, nimages=s_distortions
     )
-    # add all the distorted structures
     for idx, d_struct in enumerate(distorted_structures):
         static_job = static_maker.make(d_struct, prev_dir=prev_dir)
         suffix = f" {idx}" if add_name == "" else f" {add_name} {idx}"
 
-        # write some provenances data in info.json file
         info = {
             "relaxed_structure": relaxed_structure,
             "distorted_structure": distorted_structure,
@@ -126,7 +121,6 @@ def spawn_energy_curve_calcs(
 
         static_job.append_name(f"{suffix}")
         jobs.append(static_job)
-        # outputs.append(static_job.output)
         task_doc: TaskDoc = static_job.output
         outputs.append(
             {
@@ -370,7 +364,6 @@ def spawn_defect_q_jobs(
         charged_relax = relax_maker.make(charged_struct)
         charged_relax.append_name(suffix)
 
-        # write some provenances data in info.json file
         info = {
             "defect": defect,
             "charge_state": qq,
@@ -396,7 +389,6 @@ def spawn_defect_q_jobs(
             "uuid": charged_relax.uuid,
             "locpot_plnr": charged_output.calcs_reversed[0].output.locpot,
         }
-        # check that the charge state was set correctly
         if validate_charge:
             validation_job = check_charge_state(qq, charged_output.structure)
             defect_q_jobs.append(validation_job)
@@ -431,10 +423,6 @@ def check_charge_state(charge_state: int, task_structure: Structure) -> Response
 def get_defect_entry(charge_state_summary: dict, bulk_summary: dict) -> list[dict]:
     """Get a defect entry from a defect calculation and a bulk calculation."""
     bulk_struct_entry = bulk_summary["sc_entry"]
-    # bulk_struct_entry = ComputedStructureEntry(
-    #     structure=bulk_summary["sc_struct"],
-    #     energy=bulk_sc_entry.energy,
-    # )
     bulk_dir_name = bulk_summary["dir_name"]
     bulk_locpot = bulk_summary["locpot_plnr"]
     defect_ent_res = []

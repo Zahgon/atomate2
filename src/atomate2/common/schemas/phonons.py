@@ -1,4 +1,3 @@
-"""Schemas for phonon documents."""
 
 import copy
 import logging
@@ -62,9 +61,7 @@ def get_factor(code: str) -> float:
 
 
 class PhononComputationalSettings(BaseModel):
-    """Collection to store computational settings for the phonon computation."""
 
-    # could be optional and implemented at a later stage?
     npoints_band: int = Field("number of points for band structure computation")
     kpath_scheme: str = Field("indicates the kpath scheme")
     kpoint_density_dos: int = Field(
@@ -73,7 +70,6 @@ class PhononComputationalSettings(BaseModel):
 
 
 class ThermalDisplacementData(BaseModel):
-    """Collection to store information on the thermal displacement matrices."""
 
     freq_min_thermal_displacements: float = Field(
         "cutoff frequency in THz to avoid numerical issues in the "
@@ -95,7 +91,6 @@ class ThermalDisplacementData(BaseModel):
 
 
 class PhononUUIDs(BaseModel):
-    """Collection to save all uuids connected to the phonon run."""
 
     optimization_run_uuid: str | None = Field(None, description="optimization run uuid")
     displacements_uuids: list[str] | None = Field(
@@ -106,14 +101,12 @@ class PhononUUIDs(BaseModel):
 
 
 class ForceConstants(MSONable):
-    """A force constants class."""
 
     def __init__(self, force_constants: list[list[Matrix3D]]) -> None:
         self.force_constants = force_constants
 
 
 class PhononJobDirs(BaseModel):
-    """Collection to save all job directories relevant for the phonon run."""
 
     displacements_job_dirs: list[str | None] | None = Field(
         None, description="The directories where the displacement jobs were run."
@@ -133,7 +126,6 @@ class PhononJobDirs(BaseModel):
 
 
 class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg]
-    """Collection of all data produced by the phonon workflow."""
 
     structure: Structure | None = Field(
         None, description="Structure of Materials Project."
@@ -193,7 +185,6 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
         None, description="if true, structure has imaginary modes"
     )
 
-    # needed, e.g. to compute Grueneisen parameter etc
     force_constants: ForceConstants | None = Field(
         None, description="Force constants between every pair of atoms in the structure"
     )
@@ -285,8 +276,6 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
         """
         additional_fields = kwargs.get("additional_fields", {})
         factor = get_factor(code)
-        # This opens the opportunity to add support for other codes
-        # that are supported by phonopy
 
         cell = get_phonopy_structure(structure)
 
@@ -295,7 +284,6 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
         else:
             primitive_matrix = "auto"
 
-        # TARP: THIS IS BAD! Including for discussions sake
         if cell.magnetic_moments is not None and primitive_matrix == "auto":
             if np.any(cell.magnetic_moments != 0.0):
                 raise ValueError(
@@ -336,12 +324,10 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
                     "dielectric": epsilon,
                     "factor": 14.399652,
                 }
-            # Other codes could be added here
         else:
             borns = None
             epsilon = None
 
-        # Produces all force constants
         phonon.produce_force_constants(forces=set_of_forces)
 
         filename_phonopy_yaml = kwargs.get("filename_phonopy_yaml", "phonopy.yaml")
@@ -349,10 +335,7 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
         force_constants_filename = kwargs.get(
             "force_constants_filename", "FORCE_CONSTANTS"
         )
-        # if kwargs.get("filename_phonopy_yaml") is None:
-        #    kwargs["filename_phonopy_yaml"] = "phonopy.yaml"
 
-        # with phonopy.load("phonopy.yaml") the phonopy API can be used
         phonon.save(
             filename_phonopy_yaml,
             settings={
@@ -368,7 +351,6 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
                 phonon.force_constants, filename=force_constants_filename
             )
 
-        # get phonon band structure
         kpath_dict, kpath_concrete = PhononBSDOSDoc.get_kpath(
             structure=get_pmg_structure(phonon.primitive),
             kpath_scheme=kpath_scheme,
@@ -380,13 +362,10 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
             kpath_concrete, npoints=npoints_band
         )
 
-        # phonon band structures will always be computed
         filename_band_yaml = kwargs.get(
             "filename_band_yaml", "phonon_band_structure.yaml"
         )
-        # filename_band_yaml = "phonon_band_structure.yaml"
 
-        # TODO: potentially add kwargs to avoid computation of eigenvectors
         phonon.run_band_structure(
             qpoints,
             path_connections=connections,
@@ -405,18 +384,14 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
             units=kwargs.get("units", "THz"),
         )
 
-        # will determine if imaginary modes are present in the structure
         imaginary_modes = bs_symm_line.has_imaginary_freq(
             tol=kwargs.get("tol_imaginary_modes", 1e-5)
         )
 
-        # gets data for visualization on website - yaml is also enough
         if kwargs.get("band_structure_eigenvectors"):
             bs_symm_line.write_phononwebsite("phonon_website.json")
 
-        # get phonon density of states
         filename_dos_yaml = kwargs.get("filename_dos_yaml", "phonon_dos.yaml")
-        # filename_dos_yaml = "phonon_dos.yaml"
 
         kpoint_density_dos = kwargs.get("kpoint_density_dos", 7_000)
         kpoint = Kpoints.automatic_density(
@@ -425,7 +400,6 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
             force_gamma=True,
         )
 
-        # projected dos
         if kwargs.get("calculate_pdos", False):
             phonon.run_mesh(
                 kpoint.kpts[0], with_eigenvectors=True, is_mesh_symmetry=False
@@ -454,7 +428,6 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
             units=kwargs.get("units", "THz"),
         )
 
-        # compute vibrational part of free energies per formula unit
         temperature_range = np.arange(
             kwargs.get("tmin", 0), kwargs.get("tmax", 500), kwargs.get("tstep", 10)
         )
@@ -483,9 +456,6 @@ class PhononBSDOSDoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg
             for temp in temperature_range
         ]
 
-        # will compute thermal displacement matrices
-        # for the primitive cell (phonon.primitive!)
-        # only this is available in phonopy
         if kwargs.get("create_thermal_displacements"):
             phonon.run_mesh(
                 kpoint.kpts[0], with_eigenvectors=True, is_mesh_symmetry=False

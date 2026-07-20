@@ -1,8 +1,6 @@
-"""File operations and default JDFTx file names."""
 
 import logging
 
-# if TYPE_CHECKING:
 from pathlib import Path
 
 from pymatgen.core import Structure

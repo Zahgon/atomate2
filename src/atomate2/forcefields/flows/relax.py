@@ -1,4 +1,3 @@
-"""Flows to combine a force field relaxation with another job (e.g. DFT relaxation)."""
 
 from __future__ import annotations
 
@@ -19,18 +18,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class CHGNetVaspRelaxMaker(Maker):
-    """
-    Maker to (pre)relax a structure using CHGNet and then run VASP.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flow produced by this maker.
-    chgnet_maker : .ForceFieldRelaxMaker
-        Maker to generate a CHGNet relaxation job.
-    vasp_maker : .BaseVaspMaker
-        Maker to generate a VASP relaxation job.
-    """
 
     name: str = f"{MLFF.CHGNet} relax followed by a VASP relax"
     chgnet_maker: ForceFieldRelaxMaker = field(
@@ -61,18 +48,6 @@ class CHGNetVaspRelaxMaker(Maker):
 
 @dataclass
 class M3GNetVaspRelaxMaker(Maker):
-    """
-    Maker to (pre)relax a structure using M3GNet and then run VASP.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flow produced by this maker.
-    m3gnet_maker : .M3GNetRelaxMaker
-        Maker to generate a M3GNet relaxation job.
-    vasp_maker : .BaseVaspMaker
-        Maker to generate a VASP relaxation job.
-    """
 
     name: str = f"{MLFF.M3GNet} relax followed by a VASP relax"
     m3gnet_maker: ForceFieldRelaxMaker = field(

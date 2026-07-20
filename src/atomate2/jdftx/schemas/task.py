@@ -1,4 +1,3 @@
-"""Core definition of a JDFTx Task Document."""
 
 import logging
 from pathlib import Path
@@ -22,11 +21,9 @@ from atomate2.utils.datetime import datetime_str
 __author__ = "Cooper Tezak <cooper.tezak@colorado.edu>"
 
 logger = logging.getLogger(__name__)
-# _DERIVATIVE_FILES = ("GRAD", "HESS")
 
 
 class CustodianDoc(BaseModel):
-    """Custodian data for JDFTx calculations."""
 
     corrections: list[Any] | None = Field(
         None,
@@ -42,7 +39,6 @@ class CustodianDoc(BaseModel):
 
 
 class TaskDoc(StructureMetadata):
-    """Calculation-level details about JDFTx calculations."""
 
     dir_name: str | Path | None = Field(
         None, description="The directory for this JDFTx task"
@@ -77,7 +73,6 @@ class TaskDoc(StructureMetadata):
         cls,
         dir_name: Path | str,
         additional_fields: dict[str, Any] = None,
-        # **jdftx_calculation_kwargs, #TODO implement
     ) -> Self:
         """
         Create a task document from a directory containing JDFTx files.
@@ -107,7 +102,6 @@ class TaskDoc(StructureMetadata):
             dir_name=dir_name,
             jdftxinput_file=FILE_NAMES["in"],
             jdftxoutput_file=FILE_NAMES["out"],
-            # **jdftx_calculation_kwargs, # still need to implement
         )
 
         doc = cls.from_structure(

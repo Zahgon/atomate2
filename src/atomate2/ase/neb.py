@@ -1,4 +1,3 @@
-"""Create NEB jobs with ASE."""
 
 from __future__ import annotations
 
@@ -25,7 +24,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class AseNebFromImagesMaker(AseMaker):
-    """Define scheme for performing ASE NEB calculations."""
 
     name: str = "ASE NEB maker"
     neb_kwargs: dict = field(default_factory=dict)
@@ -88,25 +86,11 @@ class AseNebFromImagesMaker(AseMaker):
             A previous calculation directory to copy output files from. Unused, just
             added to match the method signature of other makers.
         """
-        # Note that images are copied to prevent them from being overwritten
-        # by ASE during the NEB run
         return self.run_ase([image.copy() for image in images], prev_dir=prev_dir)
 
 
 @dataclass
 class AseNebFromEndpointsMaker(AseNebFromImagesMaker):
-    """Maker to create ASE NEB jobs from two endpoints.
-
-    Optionally relax the two endpoints and return a full NEB hop analysis.
-    If a maker to relax the endpoints is not specified, this job
-    interpolates the provided endpoints and performs NEB on the
-    interpolated images.
-
-    Parameters
-    ----------
-    endpoint_relax_maker : Maker or None (default)
-        Optional maker to initially relax the endpoints.
-    """
 
     endpoint_relax_maker: Maker | None = None
 
@@ -136,9 +120,6 @@ class AseNebFromEndpointsMaker(AseNebFromImagesMaker):
         **interpolation_kwargs
             kwargs to pass to the interpolation function.
         """
-        # return interpolate_endpoints_ase(
-        #     endpoints, num_images, interpolation_method, **interpolation_kwargs
-        # )
         interpolated = _get_images_from_endpoints(
             endpoints,
             num_images,
@@ -210,55 +191,12 @@ def interpolate_endpoints_ase(
     interpolation_method: NebInterpolation | str = NebInterpolation.LINEAR,
     **interpolation_kwargs,
 ) -> list[Atoms]:
-    """
-    Interpolate between two endpoints using ASE's methods.
-
-    Note that `num_images` specifies the number of intermediate images
-    between two endpoints. Thus, specifying `num_images = 5` will return
-    the endpoints and 5 intermediate images.
-
-    Parameters
-    ----------
-    endpoints : tuple[Structure,Structure] or list[Structure]
-        A set of two endpoints to interpolate NEB images from.
-    num_images : int
-        The number of images to include in the interpolation.
-    interpolation_method : .NebInterpolation
-        The method to use to interpolate between images.
-    **interpolation_kwargs
-        kwargs to pass to the interpolation function.
-
-    Returns
-    -------
-    list of Atoms : the atoms interpolated between endpoints.
-    """
-    endpoint_atoms = [
-        AseAtomsAdaptor().get_atoms(ions)
-        if isinstance(ions, Structure | Molecule)
-        else ions.copy()
-        for ions in endpoints
-    ]
-    images = [
-        endpoint_atoms[0],
-        *[endpoint_atoms[0].copy() for _ in range(num_images)],
-        endpoint_atoms[1],
-    ]
-
-    interp_method = NebInterpolation(interpolation_method)
-    if interp_method == NebInterpolation.LINEAR:
-        interpolate(images, **interpolation_kwargs)
-    elif interp_method == NebInterpolation.IDPP:
-        idpp_interpolate(images, **interpolation_kwargs)
-    return images
+    pass
 
 
 class EmtNebFromImagesMaker(AseNebFromImagesMaker):
-    """EMT NEB from images maker."""
 
     name: str = "EMT NEB from images maker"
 
     def _get_calculator(self) -> Calculator:
-        """EMT calculator."""
-        from ase.calculators.emt import EMT
-
-        return EMT(**self.calculator_kwargs)
+        pass

@@ -1,4 +1,3 @@
-"""An FHI-aims jobflow runner."""
 
 from __future__ import annotations
 
@@ -126,10 +125,8 @@ def run_aims_socket(
 
     with SocketIOCalculator(calc=calculator, port=port) as calc:
         for atoms_calc in atoms_to_calculate:
-            # Delete prior calculation results
             calc.results.clear()
 
-            # Reset atoms information to the new cell
             atoms.info = atoms_calc.info
             atoms.cell = atoms_calc.cell
             atoms.positions = atoms_calc.positions

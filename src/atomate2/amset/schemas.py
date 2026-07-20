@@ -1,4 +1,3 @@
-"""Module defining amset document schemas."""
 
 import logging
 import re
@@ -27,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 
 class TransportData(BaseModel):
-    """Definition of AMSET transport data model."""
 
     doping: list[float] = Field(None, description="Carrier concentrations in cm^-3")
     temperatures: list[float] = Field(None, description="Temperatures in K")
@@ -53,7 +51,6 @@ class TransportData(BaseModel):
 
 
 class UsageStats(BaseModel):
-    """Definition of AMSET timing data."""
 
     interpolation: float = Field(
         None, description="Time taken for interpolation routines (s)"
@@ -71,7 +68,6 @@ class UsageStats(BaseModel):
 
 
 class MeshData(BaseModel):
-    """Definition of full AMSET mesh data."""
 
     energies: dict[str, list[list[float]]] = Field(
         None, description="Band structure energies in eV on the irreducible mesh."
@@ -107,7 +103,6 @@ class MeshData(BaseModel):
 
 
 class AmsetTaskDocument(StructureMetadata):
-    """Definition of VASP task document."""
 
     dir_name: str = Field(None, description="The directory for this AMSET task")
     last_updated: str = Field(
@@ -176,7 +171,6 @@ class AmsetTaskDocument(StructureMetadata):
         transport = loadfn(transport_file)
         timing = loadfn("timing.json.gz") if Path("timing.json.gz").exists() else None
 
-        # insert mesh if calculation is converged or convergence is not known
         mesh_kwargs = {}
         mesh_files = list(Path(".").glob("*mesh_*"))
         if len(mesh_files) > 0:
@@ -187,7 +181,6 @@ class AmsetTaskDocument(StructureMetadata):
                 "soc": mesh.pop("soc"),
             }
             if include_mesh:
-                # remove duplicated data
                 for key in ("doping", "temperatures", "fermi_levels", "structure"):
                     mesh.pop(key)
 

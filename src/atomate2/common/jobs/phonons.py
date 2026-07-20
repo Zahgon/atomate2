@@ -1,4 +1,3 @@
-"""Jobs for running phonon calculations."""
 
 from __future__ import annotations
 
@@ -140,21 +139,17 @@ def generate_phonon_displacements(
         stacklevel=2,
     )
     if "magmom" in structure.site_properties:
-        # remove_site_property is in-place so make a structure copy first
         no_mag_struct = structure.copy().remove_site_property(property_name="magmom")
     else:
         no_mag_struct = structure
     cell = get_phonopy_structure(no_mag_struct)
     factor = get_factor(code)
 
-    # a bit of code repetition here as I currently
-    # do not see how to pass the phonopy object?
     if use_symmetrized_structure == "primitive" and kpath_scheme != "seekpath":
         primitive_matrix: np.ndarray | str = np.eye(3)
     else:
         primitive_matrix = "auto"
 
-    # TARP: THIS IS BAD! Including for discussions sake
     if cell.magnetic_moments is not None and primitive_matrix == "auto":
         if np.any(cell.magnetic_moments != 0.0):
             raise ValueError(
@@ -338,7 +333,6 @@ def run_phonon_displacements(
             phonon_job = phonon_maker.make(displacement, prev_dir=prev_dir)
             phonon_job.append_name(f" {idx + 1}/{num_disp}")
 
-            # we will add some meta data
             info = {
                 "displacement_number": idx,
                 "original_structure": structure,

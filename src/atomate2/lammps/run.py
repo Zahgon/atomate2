@@ -1,4 +1,3 @@
-"""Wrapper to invoke lammps from the CLI."""
 
 import shlex
 import subprocess

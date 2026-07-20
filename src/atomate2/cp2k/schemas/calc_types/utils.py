@@ -1,4 +1,3 @@
-"""Module to define various calculation types as Enums for CP2K."""
 
 from collections.abc import Iterable, Sequence
 from pathlib import Path
@@ -39,13 +38,9 @@ def run_type(inputs: dict) -> RunType:
         "FRACTION": dft.get("hfx", {}).get("FRACTION", 0),
     }
 
-    # Standard calc will only have one functional. If there are multiple functionals
-    # used this is either a hybrid calc or a non-generic mixed calculation.
     if len(parameters["FUNCTIONAL"]) == 1:
         parameters["FUNCTIONAL"] = parameters["FUNCTIONAL"][0]
 
-    # If all parameters in for the functional_class.special_type located in
-    # run_types.yaml are met, then that is the run type.
     for functional_class in _RUN_TYPE_DATA:
         for special_type, params in _RUN_TYPE_DATA[functional_class].items():
             if all(
@@ -54,8 +49,6 @@ def run_type(inputs: dict) -> RunType:
             ):
                 return RunType(f"{special_type}{vdw}{is_hubbard}")
 
-    # TODO elegant way to handle this?
-    # This is a hack to get the non-standard hybrids to work
     if parameters.get("FRACTION"):
         return RunType(f"HYBRID{vdw}{is_hubbard}")
 

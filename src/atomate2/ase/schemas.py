@@ -1,12 +1,3 @@
-"""Schema definitions for Atomic Simulation Environment (ASE) tasks.
-
-The following code has been taken and generalized to
-generic ASE calculators from
-https://github.com/materialsvirtuallab/m3gnet
-The code has been released under BSD 3-Clause License
-and the following copyright applies:
-Copyright (c) 2022, Materials Virtual Lab.
-"""
 
 from __future__ import annotations
 
@@ -55,7 +46,6 @@ def convert_stress_from_voigt_to_symm(voigt: Vector6D) -> Matrix3D:
 
 
 class AseResult(BaseModel):
-    """Schema to store outputs in AseTaskDocument."""
 
     final_mol_or_struct: Structure | Molecule | None = Field(
         None, description="The molecule or structure in the final trajectory frame."
@@ -106,14 +96,12 @@ class AseResult(BaseModel):
 
 
 class AseObject(ValueEnum):
-    """Types of ASE data objects."""
 
     TRAJECTORY = "trajectory"
     IONIC_STEPS = "ionic_steps"
 
 
 class AseBaseModel(BaseModel):
-    """Base document class for ASE input and output."""
 
     mol_or_struct: Structure | Molecule | None = Field(
         None,
@@ -123,21 +111,14 @@ class AseBaseModel(BaseModel):
 
     @property
     def structure(self) -> Structure | None:
-        """Retrieve the structure associated with this document, if applicable."""
-        if isinstance(self.mol_or_struct, Structure):
-            return self.mol_or_struct
-        return None
+        pass
 
     @property
     def molecule(self) -> Molecule | None:
-        """Retrieve the molecule associated with this document, if applicable."""
-        if isinstance(self.mol_or_struct, Molecule):
-            return self.mol_or_struct
-        return None
+        pass
 
 
 class IonicStep(AseBaseModel):
-    """Document defining the information at each ionic step."""
 
     energy: float | None = Field(None, description="The free energy.")
     forces: list[list[float]] | None = Field(
@@ -148,7 +129,6 @@ class IonicStep(AseBaseModel):
 
 
 class OutputDoc(AseBaseModel):
-    """The outputs of this job."""
 
     energy: float | None = Field(None, description="Total energy in units of eV.")
 
@@ -166,14 +146,10 @@ class OutputDoc(AseBaseModel):
         ),
     )
 
-    # NOTE: units for stresses were converted to kbar (* -10 from standard output)
-    #       to comply with MP convention
     stress: Matrix3D | None = Field(
         None, description="The stress on the cell in units of kbar."
     )
 
-    # NOTE: the ionic_steps can also be a dict when these are in blob storage and
-    #       retrieved as objects.
     ionic_steps: list[IonicStep] | dict | None = Field(
         None, description="Step-by-step trajectory of the relaxation."
     )
@@ -188,7 +164,6 @@ class OutputDoc(AseBaseModel):
 
 
 class InputDoc(AseBaseModel):
-    """The inputs used to run this job."""
 
     relax_cell: bool | None = Field(
         None,
@@ -220,7 +195,6 @@ class InputDoc(AseBaseModel):
 
 
 class AseStructureTaskDoc(StructureMetadata):
-    """Document containing information on structure manipulation using ASE."""
 
     structure: Structure = Field(
         None, description="Final output structure from the task"
@@ -301,7 +275,6 @@ class AseStructureTaskDoc(StructureMetadata):
 
 
 class AseMoleculeTaskDoc(MoleculeMetadata):
-    """Document containing information on molecule manipulation using ASE."""
 
     molecule: Molecule = Field(None, description="Final output molecule from the task")
 
@@ -350,7 +323,6 @@ class AseMoleculeTaskDoc(MoleculeMetadata):
 
 
 class AseTaskDoc(AseBaseModel):
-    """Document containing information on generic ASE jobs."""
 
     input: InputDoc = Field(
         None, description="The input information used to run this job."
@@ -475,8 +447,6 @@ class AseTaskDoc(AseBaseModel):
             optimizer_kwargs=optimizer_kwargs,
         )
 
-        # Workaround for cases where the ASE optimizer does not correctly limit the
-        # number of steps for static calculations.
         if (steps is not None) and steps <= 1:
             steps = 1
             n_steps = 1
@@ -564,10 +534,6 @@ class AseTaskDoc(AseBaseModel):
 
         objects: dict[AseObject, Any] = {}
         if store_trajectory != StoreTrajectoryOption.NO:
-            # For VASP calculations, the PARTIAL trajectory option removes
-            # electronic step info. There is no equivalent for classical
-            # forcefields, so we just save the same info for FULL and
-            # PARTIAL options.
             objects[AseObject.TRAJECTORY] = trajectory  # type: ignore[index]
 
         output_doc = OutputDoc(

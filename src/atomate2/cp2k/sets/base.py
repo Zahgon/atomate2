@@ -1,4 +1,3 @@
-"""Module defining base CP2K input set and generator."""
 
 from __future__ import annotations
 
@@ -35,7 +34,6 @@ _BASE_GAPW_SET = loadfn(get_mod_path("atomate2.cp2k.sets") / "BaseAllSet.yaml")
 
 
 class Cp2kInputSet(InputSet):
-    """A class to represent a set of CP2K inputs."""
 
     def __init__(
         self,
@@ -141,7 +139,6 @@ class Cp2kInputSet(InputSet):
 
         return Cp2kInputSet(cp2k_input=cp2k_input, optional_files=optional)
 
-    # TODO Validation
     @property
     def is_valid(self) -> bool:
         """Whether the input set is valid."""
@@ -154,25 +151,6 @@ class Cp2kInputSet(InputSet):
 
 @dataclass
 class Cp2kInputGenerator(InputGenerator):
-    """
-    A class to generate Cp2k input sets.
-
-    Parameters
-    ----------
-    user_input_settings:
-        Updates to the inputs in the base config dict.
-    user_kpoints_settings:
-        Updates to the kpoint settings in the base config dict
-    sort_structure
-        Whether to sort the structure (using the default sort order of
-        electronegativity) before generating input files. Defaults to True, the behavior
-        you would want most of the time. This ensures that similar atomic species are
-        grouped together.
-    symprec
-        Tolerance for symmetry finding, used for line mode band structure k-points.
-    config_dict
-        The config dictionary to use containing the base input set settings.
-    """
 
     user_input_settings: dict = field(default_factory=dict)
     user_kpoints_settings: dict | Kpoints = field(default_factory=dict)
@@ -328,7 +306,6 @@ class Cp2kInputGenerator(InputGenerator):
         input_updates = input_updates or {}
         input_settings = dict(self.config_dict["cp2k_input"])
 
-        # Generate base input but override with user input settings
         input_settings = recursive_update(input_settings, input_updates)
         input_settings = recursive_update(input_settings, self.user_input_settings)
         overrides = input_settings.pop("override_default_params", {})
@@ -390,20 +367,15 @@ class Cp2kInputGenerator(InputGenerator):
         """Get the kpoints object."""
         kpoints_updates = kpoints_updates or {}
 
-        # don't write kpoints if user_kpoints_settings or base KPOINTS config is None
-        # KPOINTS are not compatible with orbital transformation mode and CP2K will
-        # crash if found
         if (
             self.user_kpoints_settings is None
             or self.config_dict.get("KPOINTS") is None
         ):
             return None
 
-        # use user setting if set otherwise default to base config settings
         if self.user_kpoints_settings != {}:
             kpt_config = deepcopy(self.user_kpoints_settings)
         else:
-            # apply updates to k-points config
             kpt_config = deepcopy(self.config_dict.get("KPOINTS", {}))
             kpt_config.update(kpoints_updates)
 
@@ -416,19 +388,16 @@ class Cp2kInputGenerator(InputGenerator):
             or "zero_weighted_reciprocal_density" in kpt_config
             or "zero_weighted_line_density" in kpt_config
         )
-        # handle length generation first as this doesn't support any additional options
         if kpt_config.get("length"):
             if explicit:
                 raise ValueError(
                     "length option cannot be used with explicit k-point generation, "
                     "added_kpoints, or zero weighted k-points."
                 )
-            # If length is in kpoints settings use Kpoints.automatic
             return Kpoints.automatic(kpt_config["length"])
 
         base_kpoints = None
         if kpt_config.get("line_density"):
-            # handle line density generation
             kpath = HighSymmKpath(structure, **kpt_config.get("kpath_kwargs", {}))
             frac_k_points, k_points_labels = kpath.get_kpoints(
                 line_density=kpt_config["line_density"], coords_are_cartesian=False
@@ -442,7 +411,6 @@ class Cp2kInputGenerator(InputGenerator):
                 kpts_weights=[1] * len(frac_k_points),
             )
         elif kpt_config.get("grid_density") or kpt_config.get("reciprocal_density"):
-            # handle regular weighted k-point grid generation
             if kpt_config.get("grid_density"):
                 base_kpoints = Kpoints.automatic_density(
                     structure, int(kpt_config["grid_density"]), self.force_gamma
@@ -462,13 +430,10 @@ class Cp2kInputGenerator(InputGenerator):
                     kpts_weights=[i[1] for i in mesh],
                 )
             else:
-                # if not explicit that means no other options have been specified
-                # so we can return the k-points as is
                 return base_kpoints
 
         zero_weighted_kpoints = None
         if kpt_config.get("zero_weighted_line_density"):
-            # zero_weighted k-points along line mode path
             kpath = HighSymmKpath(structure)
             frac_k_points, k_points_labels = kpath.get_kpoints(
                 line_density=kpt_config["zero_weighted_line_density"],
@@ -514,7 +479,6 @@ class Cp2kInputGenerator(InputGenerator):
         if added_kpoints and not (base_kpoints or zero_weighted_kpoints):
             return added_kpoints
 
-        # do some sanity checking
         if "line_density" in kpt_config and zero_weighted_kpoints:
             raise ValueError(
                 "Cannot combined line_density and zero weighted k-points options"
@@ -530,9 +494,6 @@ class Cp2kInputGenerator(InputGenerator):
         return _combine_kpoints(base_kpoints, zero_weighted_kpoints, added_kpoints)
 
 
-# TODO From `atomate2.vasp.sets.base`. Should possibly go in common.
-# only reservation is if, eventually, CP2K gets it own kpoint object version
-# instead of using the vasp kpoint objects.
 def _combine_kpoints(*kpoints_objects: Kpoints) -> Kpoints:
     """Combine k-points files together."""
     labels = []
@@ -567,23 +528,6 @@ def _combine_kpoints(*kpoints_objects: Kpoints) -> Kpoints:
 
 @dataclass
 class Cp2kAllElectronInputGenerator(Cp2kInputGenerator):
-    """
-    A class to generate Cp2k input sets for all electron calculations.
-
-    Parameters
-    ----------
-    user_input_settings:
-        Updates to the inputs in the base config dict.
-    sort_structure
-        Whether to sort the structure (using the default sort order of
-        electronegativity) before generating input files. Defaults to True, the behavior
-        you would want most of the time. This ensures that similar atomic species are
-        grouped together.
-    symprec
-        Tolerance for symmetry finding, used for line mode band structure k-points.
-    config_dict
-        The config dictionary to use containing the base input set settings.
-    """
 
     user_input_settings: dict = field(default_factory=dict)
     sort_structure: bool = True

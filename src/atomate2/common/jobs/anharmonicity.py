@@ -1,4 +1,3 @@
-"""Jobs for running anharmonicity quantification."""
 
 from __future__ import annotations
 
@@ -32,15 +31,6 @@ logger = logging.getLogger(__name__)
 
 
 class ImaginaryModeError(Exception):
-    """Exception raised when an imaginary mode is detected.
-
-    Attributes
-    ----------
-    largest_mode:
-        The largest eigenmode to check the sign of
-    message:
-        Explanation of the error
-    """
 
     def __init__(self, largest_mode: float) -> None:
         self.largest_mode = largest_mode
@@ -100,11 +90,9 @@ def get_sigma_per_site(
         ({wyckoff symbol: sites}, sigma^A) for
         all the sites in the structure
     """
-    # Ensure that DFT and harmonic forces are in np format
     forces_dft = np.array(forces_dft)
     forces_harmonic = np.array(forces_harmonic)
 
-    # Check shapes of forces
     if len(np.shape(forces_dft)) == 2:
         forces_dft = np.expand_dims(forces_dft, axis=0)
         forces_harmonic = np.expand_dims(forces_harmonic, axis=0)
@@ -169,11 +157,9 @@ def get_sigma_per_element(
         List of tuples in the form (atom symbol, sigma^A)
         for all the atoms in the structure.
     """
-    # Ensure that DFT and harmonic forces are in np format
     forces_dft = np.array(forces_dft)
     forces_harmonic = np.array(forces_harmonic)
 
-    # Check shapes of forces
     if len(np.shape(forces_dft)) == 2:
         forces_dft = np.expand_dims(forces_dft, axis=0)
         forces_harmonic = np.expand_dims(forces_harmonic, axis=0)
@@ -189,15 +175,11 @@ def get_sigma_per_element(
     sigma_atom = []
     unique_symbols = []
     for u in unique_atoms:
-        # Find atoms of type u in the structure
         mask = atom_numbers == u
-        # Add symbol for atom u to list of examined atoms
         unique_symbols.append(symbols[mask][0])
-        # Take forces belonging to this atom
         f_dft = forces_dft[:, mask]
         f_ha = forces_harmonic[:, mask]
         f_anharm = f_dft - f_ha
-        # Calculate sigma^A for this atom
         sigma_atom.append(calc_sigma_a(f_anharm, f_dft))
 
     return [(unique_symbols[i], sigma_atom[i]) for i in range(len(sigma_atom))]
@@ -232,11 +214,9 @@ def box_muller(
     n_eigvals = eig_vals.shape[0]
     spread = np.sqrt(-2.0 * np.log(1.0 - rng.random(size=n_eigvals)))
 
-    # Assign amplitudes (A_s) and phases (phi_s)
     a_s = spread * (np.sqrt(temp * kb) / eig_vals)
     phi_s = 2.0 * np.pi * rng.random(size=n_eigvals)
 
-    # Get displacement (not normalized by sqrt(masses) yet)
     return (a_s * np.cos(phi_s) * eig_vecs).sum(axis=2)
 
 
@@ -297,13 +277,11 @@ def displace_structure(
     dynamical_matrix = build_dynmat(force_constants, phonon_supercell)
     eig_val, eig_vec = get_eigens(dynamical_matrix)
 
-    # Check for imaginary modes
     if eig_val[3] < 0.0001:
         raise ImaginaryModeError(eig_val[3])
     eig_val = eig_val[3:]
     x_acs = eig_vec[:, 3:].reshape((-1, 3, len(eig_val)))
 
-    # gauge eigenvectors: largest value always positive
     for ii in range(x_acs.shape[-1]):
         vec = x_acs[:, :, ii]
         max_arg = np.argmax(abs(vec))
@@ -409,22 +387,18 @@ def get_sigma_a_per_mode(
         List of tuples in the form (mode frequency in THz, Sigma^A)
         for all the modes in the structure
     """
-    # Projecting the forces
     dynamical_matrix = build_dynmat(force_constants, structure)
     eig_val, eig_vec = get_eigens(dynamical_matrix)
     eig_val = eig_val[3:] * omegaToTHz
-    # Projection matrix P
     p = eig_vec.T
     masses = np.array([site.species.weight for site in structure.sites])
     m = masses ** (-0.5)
-    # Project the forces
     dft_forces = m.reshape((len(structure), 1)) * dft_forces
     dft_proj = np.array([p @ (f.flatten()) for f in np.array(dft_forces)])[:, 3:]
     harmonic_forces = m.reshape((len(structure), 1)) * harmonic_forces
     harmonic_proj = np.array([p @ (f.flatten()) for f in np.array(harmonic_forces)])[
         :, 3:
     ]
-    # Calculate sigma^A for each mode
     mode_sigma_vals = []
     for mode in np.unique(eig_val):
         dft_vals = np.array(
@@ -668,7 +642,6 @@ def run_displacements(
                 f" anharmonicity quant. {idx + 1}/{len(displacements)}"
             )
 
-            # we will add some meta data
             info = {
                 "phonon_supercell": phonon_supercell,
                 "displaced_structure": displacement,

@@ -1,4 +1,3 @@
-"""Define common QHA flow agnostic to electronic-structure code."""
 
 from __future__ import annotations
 
@@ -31,58 +30,6 @@ supported_eos = frozenset(("vinet", "birch_murnaghan", "murnaghan"))
 
 @dataclass
 class CommonQhaMaker(Maker, ABC):
-    """Use the quasi-harmonic approximation.
-
-    First relax a structure. Then we scale the relaxed structure, and then compute
-    harmonic phonons for each scaled structure with Phonopy. Finally, we compute the
-    Gibbs free energy and other thermodynamic properties available from the
-    quasi-harmonic approximation.
-
-    Note: We do not consider electronic free energies so far.
-    This might be problematic for metals (see e.g.,
-    Wolverton and Zunger, Phys. Rev. B, 52, 8813 (1994).)
-
-    Note: Magnetic Materials have never been computed with this workflow.
-
-    Parameters
-    ----------
-    name: str
-        Name of the flows produced by this maker.
-    initial_relax_maker: .ForceFieldRelaxMaker | .BaseVaspMaker | None
-        Maker to relax the input structure.
-    eos_relax_maker: .ForceFieldRelaxMaker | .BaseVaspMaker | None
-        Maker to relax deformed structures for the EOS fit.
-        The volume has to be fixed!
-    phonon_maker: .BasePhononMaker | None
-        Maker to compute phonons. The volume has to be fixed!
-        The beforehand relaxation could be switched off.
-    linear_strain: tuple[float, float]
-        Percentage linear strain to apply as a deformation, default = -5% to 5%.
-    number_of_frames: int
-        Number of strain calculations to do for EOS fit, default = 6.
-    t_max: float | None
-        Maximum temperature until which the QHA will be performed
-    pressure: float | None
-        Pressure (GPa) at which the QHA will be performed (default None, no pressure)
-    skip_analysis: bool
-        Skips the analysis step and only performs EOS and phonon computations.
-    ignore_imaginary_modes: bool
-        By default, volumes where the harmonic phonon approximation shows imaginary
-        will be ignored
-    eos_type: str
-        Equation of State type used for the fitting. Defaults to vinet.
-    min_length: float
-        min length of the supercell that will be built
-    max_length: float
-        max length of the supercell that will be built
-    prefer_90_degrees: bool
-        if set to True, supercell algorithm will first try to find a supercell
-        with 3 90 degree angles
-    allow_orthorhomic: bool
-        Whether the supercell should be allowed to be orthorhombic
-    get_supercell_size_kwargs: dict
-        kwargs that will be passed to get_supercell_size to determine supercell size
-    """
 
     name: str = "QHA Maker"
     initial_relax_maker: ForceFieldRelaxMaker | BaseVaspMaker | None = None
@@ -129,7 +76,6 @@ class CommonQhaMaker(Maker, ABC):
 
         qha_jobs = []
 
-        # In this way, one can easily exchange makers and enforce postprocessor None
         self.eos = CommonEosMaker(
             initial_relax_maker=self.initial_relax_maker,
             eos_relax_maker=self.eos_relax_maker,
@@ -142,7 +88,6 @@ class CommonQhaMaker(Maker, ABC):
         eos_job = self.eos.make(structure)
         qha_jobs.append(eos_job)
 
-        # implement a supercell job to get matrix for just the equilibrium structure
         if supercell_matrix is None:
             supercell = get_supercell_size(
                 eos_output=eos_job.output,
@@ -155,7 +100,6 @@ class CommonQhaMaker(Maker, ABC):
             qha_jobs.append(supercell)
             supercell_matrix = supercell.output
 
-        # pass the matrix to the phonon_jobs, allow to set a consistent matrix instead
         phonon_jobs = get_phonon_jobs(
             phonon_maker=self.phonon_maker,
             eos_output=eos_job.output,
@@ -185,13 +129,6 @@ class CommonQhaMaker(Maker, ABC):
                 "that the volume needs to be kept fixed.",
                 stacklevel=2,
             )
-        # if self.phonon_maker.symprec != self.symprec:
-        #     warnings.warn(
-        #         "You are using different symmetry precisions "
-        #         "in the phonon makers and other parts of the "
-        #         "QHA workflow.",
-        #         stacklevel=2,
-        #     )
         if self.phonon_maker.static_energy_maker is None:
             warnings.warn(
                 "A static energy maker "

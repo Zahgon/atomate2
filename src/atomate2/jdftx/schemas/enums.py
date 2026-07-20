@@ -1,17 +1,14 @@
-"""Enums for constants across JDFTx schemas."""
 
 from emmet.core.types.enums import ValueEnum
 
 
 class JDFTxStatus(ValueEnum):
-    """JDFTx Calculation State."""
 
     SUCCESS = "successful"
     FAILED = "unsuccessful"
 
 
 class CalcType(ValueEnum):
-    """JDFTx calculation type."""
 
     GGA = "gga"
     GGA_PBE = "gga-PBE"
@@ -35,7 +32,6 @@ class CalcType(ValueEnum):
 
 
 class TaskType(ValueEnum):
-    """JDFTx task type."""
 
     SINGLEPOINT = "Single Point"
     LATTICEOPT = "Lattice Optimization"
@@ -46,7 +42,6 @@ class TaskType(ValueEnum):
 
 
 class SolvationType(ValueEnum):
-    """JDFTx solvent type."""
 
     NONE = "None"
     SALSA = "SaLSA"

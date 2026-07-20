@@ -1,4 +1,3 @@
-"""Utils for accessing Atomic Simulation Environment calculators."""
 
 from __future__ import annotations
 
@@ -59,15 +58,10 @@ FORCE_BASED_OPTIMIZERS = {
     "MDMin": MDMin,
 }
 
-# Parameters chosen for consistency with atomate2.vasp.sets.core.NebSetGenerator
 DEFAULT_NEB_KWARGS = {"k": 5.0, "climb": True, "method": "improvedtangent"}
 
 
 class TrajectoryObserver:
-    """Trajectory observer.
-
-    This is a hook in the relaxation process that saves the intermediate structures.
-    """
 
     def __init__(self, atoms: Atoms, store_md_outputs: bool = False) -> None:
         """Initialize the Observer.
@@ -103,8 +97,6 @@ class TrajectoryObserver:
         self._store_md_outputs = store_md_outputs
         if store_md_outputs:
             self._calc_kwargs |= dict(velocities=True, temperature=True)
-        # `self.{velocities,temperatures}` always initialized,
-        # but data is only stored / saved to trajectory for MD runs
         self.velocities: list[np.ndarray] = []
         self.temperatures: list[float] = []
 
@@ -112,10 +104,6 @@ class TrajectoryObserver:
         """Save the properties of an Atoms during the relaxation."""
         self.energies.append(self.compute_energy())
         self.forces.append(self.atoms.get_forces())
-        # MD needs kinetic energy parts of stress, relaxations do not
-        # When _store_md_outputs is True, ideal gas contribution to
-        # stress is included.
-        # Only store stress for periodic systems.
         if self._calc_kwargs["stresses"]:
             self.stresses.append(
                 self.atoms.get_stress(include_ideal_gas=self._store_md_outputs)
@@ -124,7 +112,6 @@ class TrajectoryObserver:
         if self._calc_kwargs["magmoms"]:
             try:
                 magmoms = self.atoms.get_magnetic_moments()
-                # This block needed for CHGNet
                 if len(magmoms.shape) == 2 and magmoms.T.shape[0] == 1:
                     magmoms = magmoms.T[0]
                 self.magmoms.append(magmoms)
@@ -139,14 +126,7 @@ class TrajectoryObserver:
             self.temperatures.append(self.atoms.get_temperature())
 
     def compute_energy(self) -> float:
-        """
-        Calculate the energy, here we just use the potential energy.
-
-        Returns
-        -------
-            energy (float)
-        """
-        return self.atoms.get_potential_energy()
+        pass
 
     def save(
         self,
@@ -335,7 +315,6 @@ class TrajectoryObserver:
 
         if self._store_md_outputs:
             traj_dict.update(velocities=self.velocities, temperature=self.temperatures)
-        # sanitize dict
         for key, value in traj_dict.items():
             if all(isinstance(val, np.ndarray) for val in value):
                 traj_dict[key] = [val.tolist() for val in value]
@@ -345,7 +324,6 @@ class TrajectoryObserver:
 
 
 class AseRelaxer:
-    """Relax a structure using the Atomic Simulation Environment."""
 
     def __init__(
         self,
@@ -500,9 +478,6 @@ class AseRelaxer:
             else:
                 write_atoms = atoms
 
-            # ase==3.26.0 change: writing FixAtoms and FixCartesian
-            # constraints to extxyz supported.
-            # Write only these constraints to extxyz
             if len(write_atoms.constraints) > 0:
                 from ase.constraints import FixAtoms, FixCartesian
 
@@ -533,7 +508,6 @@ class AseRelaxer:
 
 
 class AseNebInterface:
-    """Perform NEB using the Atomic Simulation Environment."""
 
     def __init__(
         self,

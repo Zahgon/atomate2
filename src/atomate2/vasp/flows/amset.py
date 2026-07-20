@@ -1,4 +1,3 @@
-"""Flows for calculating transport properties using VASP."""
 
 from __future__ import annotations
 
@@ -60,22 +59,6 @@ _DEFAULT_TEMPERATURES = (200, 300, 400, 500, 600, 700, 800, 900, 1000)
 
 @dataclass
 class DeformationPotentialMaker(Maker):
-    """
-    Maker to generate acoustic deformation potentials for amset.
-
-    .. Note::
-        It is heavily recommended to symmetrize the structure before passing it to this
-        flow. Otherwise, the deformation potentials may not be aligned correctly.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    symprec : float
-        Symmetry precision to use in the reduction of symmetry.
-    elastic_relax_maker : .BaseVaspMaker
-        Maker used to generate elastic relaxations.
-    """
 
     name: str = "deformation potential"
     symprec: float = SETTINGS.SYMPREC
@@ -105,13 +88,10 @@ class DeformationPotentialMaker(Maker):
         bulk = self.static_deformation_maker.make(structure, prev_dir=prev_dir)
         bulk.append_name("bulk ", prepend=True)
 
-        # all deformation calculations need to be on the same k-point mesh, to achieve
-        # this we override user_kpoints_settings with the desired k-points
         bulk_kpoints = bulk.output.output.orig_inputs.kpoints
         deformation_maker = deepcopy(self.static_deformation_maker)
         deformation_maker.input_set_generator.user_kpoints_settings = bulk_kpoints
 
-        # generate and run the deformations
         vasp_deformation_calcs = run_amset_deformations(
             bulk.output.structure,
             symprec=self.symprec,
@@ -119,7 +99,6 @@ class DeformationPotentialMaker(Maker):
             static_deformation_maker=self.static_deformation_maker,
         )
 
-        # generate the deformation.h5 file
         deformation_potentials = calculate_deformation_potentials(
             bulk.output.dir_name,
             vasp_deformation_calcs.output,
@@ -136,44 +115,6 @@ class DeformationPotentialMaker(Maker):
 
 @dataclass
 class VaspAmsetMaker(Maker):
-    """
-    Maker to calculate transport properties using AMSET with VASP calculation as input.
-
-    .. Note::
-        It is heavily recommended to symmetrize the structure before passing it to
-        this flow. Otherwise, the transport properties may not lie along the
-        correct axes.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    doping : tuple of float
-        Doping concentrations at which to calculate transport properties.
-    temperatures : tuple of float
-        Temperatures at which to calculate transport properties.
-    use_hse_gap : bool
-        Whether to perform an HSE06 calculation to calculate the band gap for use in
-        AMSET. This can impact the results for small band gap materials.
-    relax_maker : .BaseVaspMaker
-        A maker to perform a tight relaxation on the bulk. Set to ``None`` to skip the
-        bulk relaxation.
-    static_maker : .BaseVaspMaker
-        The maker to use for the initial static calculation.
-    dense_uniform_maker : .BaseVaspMaker
-        The maker to use for dense uniform calculations.
-    dielectric_maker : .BaseVaspMaker
-        The maker to use for calculating dielectric constants.
-    elastic_maker : .ElasticMaker
-        The maker to use for calculating elastic constants.
-    deformation_potential_maker : .DeformationPotentialMaker
-        The maker to use for calculating acoustic deformation potentials.
-    hse_gap_maker : .BaseVaspMaker
-        The maker to use for calculating the band gap using HSE06. Note, this maker is
-        only used if ``use_hse_gap=True``.
-    amset_maker : .AmsetMaker
-        The maker to use for running AMSET calculations.
-    """
 
     name: str = "VASP amset"
     doping: tuple[float, ...] = _DEFAULT_DOPING
@@ -216,7 +157,6 @@ class VaspAmsetMaker(Maker):
         jobs = []
 
         if self.relax_maker is not None:
-            # optionally relax the structure
             bulk = self.relax_maker.make(structure, prev_dir=prev_dir)
             jobs.append(bulk)
             structure = bulk.output.structure
@@ -224,24 +164,20 @@ class VaspAmsetMaker(Maker):
 
         static = self.static_maker.make(structure, prev_dir=prev_dir)
 
-        # dense band structure for eigenvalues and wave functions
         dense_bs = self.dense_uniform_maker.make(
             static.output.structure, prev_dir=static.output.dir_name
         )
 
-        # elastic constant
         elastic = self.elastic_maker.make(
             static.output.structure,
             prev_dir=static.output.dir_name,
             equilibrium_stress=static.output.output.stress,
         )
 
-        # dielectric constant
         dielectric = self.dielectric_maker.make(
             static.output.structure, prev_dir=static.output.dir_name
         )
 
-        # polar phonon frequency
         phonon_frequency = calculate_polar_phonon_frequency(
             dielectric.output.structure,
             dielectric.output.calcs_reversed[0].output.normalmode_frequencies,
@@ -249,18 +185,14 @@ class VaspAmsetMaker(Maker):
             dielectric.output.calcs_reversed[0].output.outcar["born"],
         )
 
-        # wavefunction coefficients
         wavefunction = generate_wavefunction_coefficients(dense_bs.output.dir_name)
 
-        # deformation potentials
         deformation = self.deformation_potential_maker.make(
             static.output.structure,
             prev_dir=static.output.dir_name,
             ibands=wavefunction.output["ibands"],
         )
 
-        # sum high-frequency dielectric and ionic contribution to get static dielectric
-        # note: the naming of dielectric constants in VASP and pymatgen is wrong
         high_freq_dielectric = dielectric.output.calcs_reversed[0].output.epsilon_static
         static_dielectric = job(np.sum)(
             [
@@ -281,8 +213,6 @@ class VaspAmsetMaker(Maker):
             static_dielectric,
         ]
 
-        # compile all property calculations and generate settings for AMSET
-        # set doping and temperature but be careful not to override user selections
         settings = {
             "doping": self.doping,
             "temperatures": self.temperatures,
@@ -305,10 +235,8 @@ class VaspAmsetMaker(Maker):
             settings["bandgap"] = gap.output.output.bandgap
             jobs.append(gap)
 
-        # apply the user settings
         settings.update(self.amset_settings)
 
-        # amset transport properties
         amset = self.amset_maker.make(
             settings,
             wavefunction_dir=wavefunction.output["dir_name"],
@@ -322,43 +250,6 @@ class VaspAmsetMaker(Maker):
 
 @dataclass
 class HSEVaspAmsetMaker(Maker):
-    """
-    Maker to calculate transport properties using AMSET with HSE06 VASP inputs.
-
-    .. Note::
-        Dielectric and elastic constants are still calculated using PBEsol, whereas
-        electronic properties, deformation potentials, and wavefunctions are calculated
-        using HSE06.
-
-    .. Note::
-        It is heavily recommended to symmetrize the structure before passing it to
-        this flow. Otherwise, the transport properties may not lie along the
-        correct axes.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    doping : tuple of float
-        Doping concentrations at which to calculate transport properties.
-    temperatures : tuple of float
-        Temperatures at which to calculate transport properties.
-    relax_maker : .BaseVaspMaker
-        A maker to perform a tight relaxation on the bulk. Set to ``None`` to skip the
-        bulk relaxation.
-    static_maker : .BaseVaspMaker
-        The maker to use for the initial static calculation.
-    dense_uniform_maker : .BaseVaspMaker
-        The maker to use for dense uniform calculations.
-    dielectric_maker : .BaseVaspMaker
-        The maker to use for calculating dielectric constants.
-    elastic_maker : .ElasticMaker
-        The maker to use for calculating elastic constants.
-    deformation_potential_maker : .DeformationPotentialMaker
-        The maker to use for calculating acoustic deformation potentials.
-    amset_maker : .AmsetMaker
-        The maker to use for running AMSET calculations.
-    """
 
     name: str = "hse VASP amset"
     doping: tuple[float, ...] = _DEFAULT_DOPING
@@ -397,7 +288,6 @@ class HSEVaspAmsetMaker(Maker):
         jobs = []
 
         if self.relax_maker is not None:
-            # optionally relax the structure
             bulk = self.relax_maker.make(structure, prev_dir=prev_dir)
             jobs.append(bulk)
             structure = bulk.output.structure
@@ -405,24 +295,20 @@ class HSEVaspAmsetMaker(Maker):
 
         static = self.static_maker.make(structure, prev_dir=prev_dir)
 
-        # dense band structure for eigenvalues and wave functions
         dense_bs = self.dense_uniform_maker.make(
             static.output.structure, prev_dir=static.output.dir_name
         )
 
-        # elastic constant
         elastic = self.elastic_maker.make(
             static.output.structure,
             prev_dir=static.output.dir_name,
             equilibrium_stress=static.output.output.stress,
         )
 
-        # dielectric constant
         dielectric = self.dielectric_maker.make(
             static.output.structure, prev_dir=static.output.dir_name
         )
 
-        # polar phonon frequency
         phonon_frequency = calculate_polar_phonon_frequency(
             dielectric.output.structure,
             dielectric.output.calcs_reversed[0].output.normalmode_frequencies,
@@ -430,18 +316,14 @@ class HSEVaspAmsetMaker(Maker):
             dielectric.output.calcs_reversed[0].output.outcar["born"],
         )
 
-        # wavefunction coefficients
         wavefunction = generate_wavefunction_coefficients(dense_bs.output.dir_name)
 
-        # deformation potentials
         deformation = self.deformation_potential_maker.make(
             static.output.structure,
             prev_dir=static.output.dir_name,
             ibands=wavefunction.output["ibands"],
         )
 
-        # sum high-frequency dielectric and ionic contribution to get static dielectric
-        # note: the naming of dielectric constants in VASP and pymatgen is wrong
         high_freq_dielectric = dielectric.output.calcs_reversed[0].output.epsilon_static
         static_dielectric = job(np.sum)(
             [
@@ -462,8 +344,6 @@ class HSEVaspAmsetMaker(Maker):
             static_dielectric,
         ]
 
-        # compile all property calculations and generate settings for AMSET
-        # set doping and temperature but be careful not to override user selections
         settings = {
             "doping": self.doping,
             "temperatures": self.temperatures,
@@ -477,10 +357,8 @@ class HSEVaspAmsetMaker(Maker):
             "free_carrier_screening": True,
         }
 
-        # apply the user settings
         settings.update(self.amset_settings)
 
-        # amset transport properties
         amset = self.amset_maker.make(
             settings,
             wavefunction_dir=wavefunction.output["dir_name"],

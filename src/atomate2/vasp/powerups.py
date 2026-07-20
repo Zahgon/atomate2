@@ -1,10 +1,3 @@
-"""Powerups for performing common modifications on VASP jobs and flows.
-
-This module provides utility functions (powerups) to modify VASP computational
-workflows, including updating INCAR settings, POTCAR configurations, k-points,
-and custodian handlers. All powerup functions return modified copies without
-altering the original objects.
-"""
 
 from __future__ import annotations
 
@@ -124,43 +117,7 @@ def update_user_potcar_settings(
     name_filter: str | None = None,
     class_filter: type[Maker] | None = BaseVaspMaker,
 ) -> JobType:
-    """Update user POTCAR settings in VaspInputGenerators.
-
-    Modifies the user_potcar_settings attribute of VASP input generators within
-    jobs, flows, or makers. Creates a copy of the input.
-
-    Parameters
-    ----------
-    flow : Job or Flow or Maker
-        A job, flow, or maker to update.
-    potcar_updates : dict[str, Any]
-        Dictionary mapping element symbols to POTCAR specifications (e.g.,
-        {'Fe': 'Fe_pv', 'O': 'O'}). Only specified elements are modified.
-    name_filter : str or None, optional
-        Filter to apply updates only to jobs matching this name pattern.
-        Default is None (no filtering).
-    class_filter : type[Maker] or None, optional
-        Filter to apply updates only to makers of this class or its subclasses.
-        Default is BaseVaspMaker.
-
-    Returns
-    -------
-    Job or Flow or Maker
-        A deep copy of the input with updated POTCAR settings.
-
-    Examples
-    --------
-    >>> flow = update_user_potcar_settings(flow, {"Fe": "Fe_pv", "O": "O_s"})
-    """
-    return update_vasp_input_generators(
-        flow=flow,
-        dict_mod_updates={
-            f"input_set_generator->user_potcar_settings->{k}": v
-            for k, v in potcar_updates.items()
-        },
-        name_filter=name_filter,
-        class_filter=class_filter,
-    )
+    pass
 
 
 def update_user_potcar_functional(
@@ -169,41 +126,7 @@ def update_user_potcar_functional(
     name_filter: str | None = None,
     class_filter: type[Maker] | None = BaseVaspMaker,
 ) -> JobType:
-    """Update POTCAR functional in VaspInputGenerators.
-
-    Modifies the user_potcar_functional attribute of VASP input generators within
-    jobs, flows, or makers. Creates a copy of the input.
-
-    Parameters
-    ----------
-    flow : Job or Flow or Maker
-        A job, flow, or maker to update.
-    potcar_functional : str
-        The POTCAR functional to use (e.g., 'PBE', 'PBE_52', 'PBE_54', 'LDA').
-    name_filter : str or None, optional
-        Filter to apply updates only to jobs matching this name pattern.
-        Default is None (no filtering).
-    class_filter : type[Maker] or None, optional
-        Filter to apply updates only to makers of this class or its subclasses.
-        Default is BaseVaspMaker.
-
-    Returns
-    -------
-    Job or Flow or Maker
-        A deep copy of the input with updated POTCAR functional.
-
-    Examples
-    --------
-    >>> flow = update_user_potcar_functional(flow, "PBE_54")
-    """
-    return update_vasp_input_generators(
-        flow=flow,
-        dict_mod_updates={
-            "input_set_generator->user_potcar_functional": potcar_functional
-        },
-        name_filter=name_filter,
-        class_filter=class_filter,
-    )
+    pass
 
 
 def update_user_kpoints_settings(
@@ -267,114 +190,16 @@ def use_auto_ispin(
     name_filter: str | None = None,
     class_filter: type[Maker] | None = BaseVaspMaker,
 ) -> JobType:
-    """Update automatic ISPIN setting in VaspInputGenerators.
-
-    Controls whether ISPIN is automatically determined based on the magnetic
-    moments in the structure. Creates a copy of the input.
-
-    Parameters
-    ----------
-    flow : Job or Flow or Maker
-        A job, flow, or maker to update.
-    value : bool, optional
-        Whether to enable automatic ISPIN determination. Default is True.
-    name_filter : str or None, optional
-        Filter to apply updates only to jobs matching this name pattern.
-        Default is None (no filtering).
-    class_filter : type[Maker] or None, optional
-        Filter to apply updates only to makers of this class or its subclasses.
-        Default is BaseVaspMaker.
-
-    Returns
-    -------
-    Job or Flow or Maker
-        A deep copy of the input with updated auto_ispin setting.
-
-    Notes
-    -----
-    When auto_ispin is True, ISPIN=2 is used if the structure has non-zero
-    magnetic moments, otherwise ISPIN=1 is used.
-    """
-    return update_vasp_input_generators(
-        flow=flow,
-        dict_mod_updates={"input_set_generator->auto_ispin": value},
-        name_filter=name_filter,
-        class_filter=class_filter,
-    )
+    pass
 
 
 def add_metadata_to_flow(
     flow: Flow, additional_fields: dict, class_filter: type[Maker] = BaseVaspMaker
 ) -> Flow:
-    """Add custom metadata fields to VASP task documents in a flow.
-
-    Adds user-defined metadata to the task documents generated by VASP jobs,
-    which is useful for organizing and querying results in databases.
-
-    Parameters
-    ----------
-    flow : Flow
-        The flow to which metadata will be added.
-    additional_fields : dict
-        Dictionary of metadata fields to add to task documents. Keys are field
-        names, values are the metadata values.
-    class_filter : Maker, optional
-        The maker class to which metadata will be added. Only jobs created by
-        this maker class or its subclasses will have metadata added.
-        Default is BaseVaspMaker.
-
-    Returns
-    -------
-    Flow
-        A copy of the flow with metadata added to matching task documents.
-
-    Examples
-    --------
-    >>> metadata = {"project": "battery_materials", "batch": "exp_001"}
-    >>> flow = add_metadata_to_flow(flow, metadata)
-    """
-    return base_add_metadata_to_flow(
-        flow=flow, class_filter=class_filter, additional_fields=additional_fields
-    )
+    pass
 
 
 def update_vasp_custodian_handlers(
     flow: Flow, custom_handlers: tuple, class_filter: type[Maker] = BaseVaspMaker
 ) -> Flow:
-    """Update custodian error handlers for VASP jobs in a flow.
-
-    Replaces the default custodian error handlers with custom handlers,
-    allowing users to customize error handling and recovery behavior or
-    disable error handling entirely.
-
-    Parameters
-    ----------
-    flow : Flow
-        The flow whose custodian handlers will be updated.
-    custom_handlers : tuple
-        Tuple of custodian handler objects to use for error handling.
-        Pass an empty tuple () to disable error handling.
-    class_filter : Maker, optional
-        The maker class for which handlers will be updated. Only jobs created
-        by this maker class or its subclasses will have their handlers modified.
-        Default is BaseVaspMaker.
-
-    Returns
-    -------
-    Flow
-        A copy of the flow with updated custodian handlers.
-
-    Notes
-    -----
-    Custodian handlers are executed in the order they appear in the tuple.
-    Common handlers include VaspErrorHandler, MeshSymmetryErrorHandler, etc.
-
-    Examples
-    --------
-    >>> from custodian.vasp.handlers import VaspErrorHandler
-    >>> handlers = (VaspErrorHandler(),)
-    >>> flow = update_vasp_custodian_handlers(flow, handlers)
-    """
-    return base_custodian_handler(
-        flow=flow, custom_handlers=custom_handlers, class_filter=class_filter
-    )
+    pass

@@ -1,4 +1,3 @@
-"""Jobs used in the calculation of elastic tensors."""
 
 from __future__ import annotations
 
@@ -83,11 +82,9 @@ def generate_elastic_deformations(
     for state, magnitudes in zip(strain_states, strain_magnitudes, strict=True):
         strains.extend([Strain.from_voigt(m * np.array(state)) for m in magnitudes])
 
-    # remove zero strains
     strains = [strain for strain in strains if (abs(strain) > 1e-10).any()]
 
     if np.linalg.matrix_rank([strain.voigt for strain in strains]) < 6:
-        # TODO: check for sufficiency of input for nth order
         raise ValueError("strain list is insufficient to fit an elastic tensor")
 
     if sym_reduce:
@@ -154,7 +151,6 @@ def run_elastic_deformations(
         deformed_structures.append(ts.final_structure)
 
         with contextlib.suppress(Exception):
-            # Write details of the transformation to the transformations.json file
             elastic_relax_maker.write_additional_data["transformations:json"] = ts
 
     elastic_job_kwargs = {}
@@ -258,7 +254,6 @@ def fit_elastic_tensor(
     job_dirs = []
     failed_uuids = []
     for data in deformation_data:
-        # stress could be none if the deformation calculation failed
         if data["stress"] is None:
             failed_uuids.append(data["uuid"])
             continue

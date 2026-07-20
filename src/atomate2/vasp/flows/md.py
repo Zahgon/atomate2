@@ -1,4 +1,3 @@
-"""Flows for running molecular dynamics simulations."""
 
 from __future__ import annotations
 
@@ -21,16 +20,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class MultiMDMaker(Maker):
-    """
-    Maker to perform an MD run split in several steps.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    md_makers : .BaseVaspMaker
-        Maker to use to generate the first relaxation.
-    """
 
     name: str = "multi md"
     md_makers: list[BaseVaspMaker] = field(default_factory=lambda: [MDMaker()])
@@ -83,28 +72,7 @@ class MultiMDMaker(Maker):
         return Flow(md_jobs, output_job.output, name=self.name)
 
     def restart_from_uuid(self, md_ref: str | OutputReference) -> Flow:
-        """Create a flow from the output reference of another MultiMDMaker.
-
-        The last output will be used as the starting point and the reference to
-        all the previous steps will be included in the final document.
-
-        Parameters
-        ----------
-        md_ref: str or OutputReference
-            The reference to the output of another MultiMDMaker
-
-        Returns
-        -------
-            A flow containing n_runs MD calculations.
-        """
-        if isinstance(md_ref, str):
-            md_ref = OutputReference(md_ref)
-
-        return self.make(
-            structure=md_ref.structure,
-            prev_dir=md_ref.vasp_dir,
-            prev_traj_ids=md_ref.full_traj_ids,
-        )
+        pass
 
     @classmethod
     def from_parameters(

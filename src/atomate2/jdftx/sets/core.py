@@ -1,4 +1,3 @@
-"""Module defining core JDFTx input set generators."""
 
 from __future__ import annotations
 
@@ -12,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SinglePointSetGenerator(JdftxInputGenerator):
-    """Class to generate JDFTx input sets that follow BEAST convention."""
 
     default_settings: dict = field(
         default_factory=lambda: {
@@ -23,7 +21,6 @@ class SinglePointSetGenerator(JdftxInputGenerator):
 
 @dataclass
 class IonicMinSetGenerator(JdftxInputGenerator):
-    """Class to generate JDFTx relax sets."""
 
     default_settings: dict = field(
         default_factory=lambda: {
@@ -35,7 +32,6 @@ class IonicMinSetGenerator(JdftxInputGenerator):
 
 @dataclass
 class LatticeMinSetGenerator(JdftxInputGenerator):
-    """Class to generate JDFTx lattice minimization sets."""
 
     default_settings: dict = field(
         default_factory=lambda: {
@@ -47,7 +43,6 @@ class LatticeMinSetGenerator(JdftxInputGenerator):
 
 
 class BEASTSetGenerator(JdftxInputGenerator):
-    """Generate BEAST Database ionic relaxation set."""
 
     default_settings: dict = field(
         default_factory=lambda: {

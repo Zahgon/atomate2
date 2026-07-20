@@ -1,4 +1,3 @@
-"""Module defining base JDFTx input set and generator."""
 
 from __future__ import annotations
 
@@ -21,7 +20,6 @@ from atomate2 import SETTINGS
 if TYPE_CHECKING:
     from pymatgen.core import Structure
 
-# TODO: remove atomate2 import + yaml once pymatgen reorg is finalized / released
 for module_path in ("pymatgen.io.jdftx", "atomate2.jdftx.sets"):
     if (_set_path := Path(get_mod_path(module_path) / "BaseJdftxSet.yaml")).exists():  # type: ignore[arg-type]
         _BASE_JDFTX_SET = loadfn(_set_path)
@@ -35,32 +33,7 @@ _PSEUDO_CONFIG = loadfn(get_mod_path("atomate2.jdftx.sets") / "PseudosConfig.yam
 
 @dataclass
 class JdftxInputGenerator(InputGenerator):
-    """A class to generate JDFTx input sets.
 
-    Args:
-        user_settings (dict): User JDFTx settings. This allows the user to
-            override the default JDFTx settings loaded in the default_settings
-            argument.
-        coulomb_truncation (bool) = False:
-            Whether to use coulomb truncation and calculate the coulomb
-            truncation center. Only works for molecules and slabs.
-        auto_kpoint_density (int) = 1000:
-            Reciprocal k-point density for automatic k-point calculation. If
-            k-points are specified in user_settings, they will not be
-            overridden.
-        potential (None, float) = None:
-            Potential vs SHE for GC-DFT calculation.
-        calc_type (str) = "bulk":
-            Type of calculation used for setting input parameters. Options are:
-            ["bulk", "surface", "molecule"].
-        pseudopotentials (str) = "GBRV"
-        config_dict (dict): The config dictionary used to set input parameters
-            used in the calculation of JDFTx tags.
-        default_settings: Default JDFTx settings.
-    """
-
-    # copy _BASE_JDFTX_SET to ensure each class instance has its own copy
-    # otherwise in-place changes can affect other instances
     user_settings: dict = field(default_factory=dict)
     coulomb_truncation: bool = False
     auto_kpoint_density: int = 1000
@@ -80,7 +53,6 @@ class JdftxInputGenerator(InputGenerator):
             )
         self.settings = self.default_settings.copy()
         self.settings.update(self.user_settings)
-        # set default coords-type to Cartesian
         if "coords-type" not in self.settings:
             self.settings["coords-type"] = "Cartesian"
         self._apply_settings(self.settings)
@@ -133,10 +105,8 @@ class JdftxInputGenerator(InputGenerator):
         Kpoints
             A tuple of integers specifying the k-point grid.
         """
-        # never override k grid definition in user settings
         if "kpoint-folding" in self.user_settings:
             return
-        # calculate k-grid with k-point density
         kpoints = Kpoints.automatic_density(
             structure=structure, kppa=self.auto_kpoint_density
         )
@@ -226,18 +196,15 @@ class JdftxInputGenerator(InputGenerator):
             pseudos_str + "/$ID" + suffix
             for suffix in _PSEUDO_CONFIG[self.pseudopotentials]["suffixes"]
         ]
-        # do not override pseudopotentials in settings
         if "ion-species" not in self.settings:
             self.settings["ion-species"] = add_tags
 
     def set_mu(self) -> None:
         """Set absolute electron chemical potential (fermi level) for GC-DFT."""
-        # never override mu in settings
         if "target-mu" in self.settings or self.potential is None:
             return
         solvent_model = self.settings["pcm-variant"]
         ashep = self.config_dict["ASHEP"][solvent_model]
-        # calculate absolute potential in Hartree
         mu = -(-ashep + self.potential) * eV_to_Ha
         self.settings["target-mu"] = {"mu": mu}
         return
@@ -260,13 +227,11 @@ class JdftxInputGenerator(InputGenerator):
         -------
         None
         """
-        # check if user set JFDTx magnetic tags and return if true
         if (
             "initial-magnetic-moments" in self.settings
             or "elec-initial-magnetization" in self.settings
         ):
             return
-        # if magmoms set on structure, build JDFTx tag
         if "magmom" in structure.site_properties:
             if len(structure.species) != len(structure.site_properties["magmom"]):
                 raise ValueError(
@@ -282,7 +247,6 @@ class JdftxInputGenerator(InputGenerator):
             tag_str = ""
             for element, magmom_list in magmoms.items():
                 tag_str += f"{element} " + " ".join(list(map(str, magmom_list))) + " "
-        # set magmoms to +5 for all metals in structure.
         else:
             magmoms = defaultdict(list)
             for species in structure.species:

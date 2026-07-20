@@ -1,15 +1,3 @@
-"""Define code agnostic MPMorph flows.
-
-This file generalizes the MPMorph workflows of
-https://github.com/materialsproject/mpmorph
-originally written in atomate for VASP only to a more general
-code agnostic form.
-
-For information about the current flows, contact:
-- Bryant Li (@BryantLi-BLI)
-- Aaron Kaplan (@esoteric-ephemera)
-- Max Gallant (@mcgalcode)
-"""
 
 from __future__ import annotations
 
@@ -35,26 +23,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class EquilibriumVolumeMaker(Maker):
-    """
-    Equilibrate structure using NVT + EOS fitting.
-
-    Parameters
-    ----------
-    name : str = "Equilibrium Volume Maker"
-        Name of the flow
-    md_maker : Maker
-        Maker to perform NVT MD runs
-    postprocessor : atomate2.common.jobs.eos.EOSPostProcessor
-        Postprocessing step to fit the EOS
-    initial_strain : float | tuple[float,float] = 0.2
-        Initial percentage linear strain to the apply to the structure
-    min_strain : float, default = 0.5
-        Minimum absolute percentage linear strain to apply to the structure
-    max_attempts : int | None = 20
-        Number of times to continue attempting to equilibrate the structure.
-        If None, the workflow will not terminate if an equilibrated structure
-        cannot be determined.
-    """
 
     md_maker: Maker
     name: str = "Equilibrium Volume Maker"
@@ -116,35 +84,27 @@ class EquilibriumVolumeMaker(Maker):
             }
 
         else:
-            # Fit EOS to running list of energies and volumes
             self.postprocessor.fit(working_outputs)
             working_outputs = dict(self.postprocessor.results)
             flow_output = {"working_outputs": working_outputs.copy(), "structure": None}
             for k in ("pressure",):
                 working_outputs["relax"].pop(k, None)
 
-            # Stop flow here if EOS cannot be fit
             if (v0 := working_outputs.get("V0")) is None:
                 return Response(output=flow_output, stop_children=True)
 
-            # Check if equilibrium volume is in range of attempted volumes
             vmin = working_outputs.get("Vmin")
             vmax = working_outputs.get("Vmax")
 
-            # Check if maximum number of refinement NVT runs is set,
-            # and if so, if that limit has been reached
             max_attempts_reached = len(working_outputs["relax"]["volume"]) >= (
                 (self.max_attempts or np.inf) + self.postprocessor.min_data_points
             )
 
-            # Successful fit: return structure at estimated equilibrium volume
             if (vmin <= v0 <= vmax) or max_attempts_reached:
                 flow_output["structure"] = structure.copy()
                 flow_output["structure"].scale_lattice(v0)  # type: ignore[attr-defined]
                 return flow_output
 
-            # Else, if the extrapolated equilibrium volume is outside the range of
-            # fitted volumes, scale appropriately
             v_ref = vmax if v0 > vmax else vmin
             eps_0 = (v0 / v_ref) ** (1.0 / 3.0) - 1.0
             linear_strain = [np.sign(eps_0) * (abs(eps_0) + self.min_strain)]
@@ -182,33 +142,6 @@ class EquilibriumVolumeMaker(Maker):
 
 @dataclass
 class MPMorphMDMaker(Maker, ABC):
-    """Base MPMorph flow for amorphous solid equilibration.
-
-    This flow uses NVT molecular dynamics to:
-    (1 - optional) Determine the equilibrium volume of an amorphous
-        structure via EOS fit.
-    (2 - optional) Quench the equilibrium volume structure from a higher
-        temperature down to a lower desired "production" temperature.
-    (3) Run a production, longer-time MD run in NVT.
-        The production run can be broken up into smaller steps to
-        ensure the simulation does not hit wall time limits.
-
-    Check atomate2.vasp.flows.mpmorph for MPMorphVaspMDMaker
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    equilibrium_volume_maker : EquilibriumVolumeMaker
-        MDMaker to generate the equilibrium volumer searcher
-    production_md_maker : Maker
-        MDMaker to generate the production run(s)
-    quench_maker :  SlowQuenchMaker or FastQuenchMaker or None
-        SlowQuenchMaker - MDMaker that quenches structure from
-            high to low temperature
-        FastQuenchMaker - DoubleRelaxMaker + Static that
-            "quenches" structure at 0K
-    """
 
     production_md_maker: Maker
     name: str = "Base MPMorph MD"
@@ -254,7 +187,6 @@ class MPMorphMDMaker(Maker, ABC):
             )
             flow_jobs.append(convergence_flow)
 
-            # convergence_flow only outputs a structure
             structure = convergence_flow.output["structure"]
 
         self.production_md_maker.name = self.name + " production run"
@@ -316,22 +248,6 @@ class MPMorphMDMaker(Maker, ABC):
 
 @dataclass
 class FastQuenchMaker(Maker):
-    """Fast quench flow from high temperature to 0K structures.
-
-    Quenches a provided structure with a single (or double)
-    relaxation and a static calculation at 0K.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker :  Maker
-        Relax Maker
-    relax_maker2 :  Maker or None
-        Relax Maker for a second relaxation; useful for tighter convergence
-    static_maker : Maker
-        Static Maker
-    """
 
     relax_maker: Maker
     static_maker: Maker
@@ -393,33 +309,6 @@ class FastQuenchMaker(Maker):
 
 @dataclass
 class SlowQuenchMaker(Maker, ABC):
-    """Slow quench from high to low temperature structures.
-
-    Quenches a provided structure with a molecular dynamics
-    run from a desired high temperature to a desired low temperature.
-    Flow creates a series of MD runs that holds at a certain temperature
-    and initiates the following MD run at a lower temperature (step-wise
-    temperature MD runs).
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    md_maker :  Maker | None = None
-        Can only be an MDMaker or ForceFieldMDMaker.
-        Defaults to None. If None, will not work. #WORK IN PROGRESS.
-    quench_start_temperature : float = 3000
-        Starting temperature for quench; default 3000K
-    quench_end_temperature : float = 500
-        Ending temperature for quench; default 500K
-    quench_temperature_step : float = 500
-        Temperature step for quench; default 500K drop
-    quench_n_steps : int = 1000
-        Number of steps for quench; default 1000 steps
-    descent_method : str = "stepwise"
-        Descent method for quench; default "stepwise".
-        Others available: "linear with hold"
-    """
 
     md_maker: Maker
     name: str = "slow quench"

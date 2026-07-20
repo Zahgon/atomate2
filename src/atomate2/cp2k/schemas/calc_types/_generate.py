@@ -1,4 +1,3 @@
-"""Module to define various calculation types as Enums for CP2K."""
 
 from itertools import product
 from pathlib import Path

@@ -1,4 +1,3 @@
-"""Module defining core Abinit input set generators."""
 
 from __future__ import annotations
 
@@ -31,7 +30,6 @@ GS_RESTART_FROM_DEPS = (f"{SCF}|{RELAX}|{MOLECULAR_DYNAMICS}:WFK|DEN",)
 
 @dataclass
 class StaticSetGenerator(AbinitInputGenerator):
-    """Common class for ground-state generators."""
 
     calc_type: str = "static"
     factory: Callable = scf_input
@@ -51,7 +49,6 @@ class StaticSetGenerator(AbinitInputGenerator):
 
         Removes some standard variables related to relaxation.
         """
-        # disable relax options in case they are present (from a restart)
         scf_abinit_settings = {
             "ionmov": None,
             "optcell": None,
@@ -72,7 +69,6 @@ class StaticSetGenerator(AbinitInputGenerator):
 
 @dataclass
 class NonSCFSetGenerator(AbinitInputGenerator):
-    """Class to generate Abinit non-SCF input sets."""
 
     calc_type: str = "nscf"
     factory: Callable = nscf_from_gsinput
@@ -129,7 +125,6 @@ class NonSCFSetGenerator(AbinitInputGenerator):
 
 @dataclass
 class LineNonSCFSetGenerator(NonSCFSetGenerator):
-    """Class to generate Abinit non-SCF input sets."""
 
     calc_type: str = "nscf_line"
     factory: Callable = ebands_from_gsinput
@@ -137,7 +132,6 @@ class LineNonSCFSetGenerator(NonSCFSetGenerator):
 
 @dataclass
 class UniformNonSCFSetGenerator(NonSCFSetGenerator):
-    """Class to generate Abinit non-SCF input sets."""
 
     calc_type: str = "nscf_uniform"
     factory: Callable = dos_from_gsinput
@@ -145,7 +139,6 @@ class UniformNonSCFSetGenerator(NonSCFSetGenerator):
 
 @dataclass
 class NonScfWfqInputGenerator(AbinitInputGenerator):
-    """Input set generator for Non-Scf Wfq calculations."""
 
     calc_type: str = "nscf_wfq"
 
@@ -170,7 +163,6 @@ class NonScfWfqInputGenerator(AbinitInputGenerator):
 
 @dataclass
 class DdkInputGenerator(AbinitInputGenerator):
-    """Input set generator for Non-Scf Wfq calculations."""
 
     calc_type: str = "ddk"
 
@@ -190,7 +182,6 @@ class DdkInputGenerator(AbinitInputGenerator):
 
 @dataclass
 class RelaxSetGenerator(AbinitInputGenerator):
-    """Common class for ground-state generators."""
 
     calc_type: str = "relaxation"
     factory: Callable = ion_ioncell_relax_input
@@ -213,7 +204,6 @@ class RelaxSetGenerator(AbinitInputGenerator):
         Sets tolmxf and determines the index of the MultiDataset.
         """
         abinit_settings = abinit_settings or {}
-        # TODO move tolmxf to the factory?
         abinit_settings["tolmxf"] = self.tolmxf
         if input_index is None:
             input_index = 1 if self.relax_cell else 0

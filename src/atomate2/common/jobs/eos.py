@@ -1,4 +1,3 @@
-"""Define common jobs used in EOS workflows, electronic-structure code agnostic."""
 
 from __future__ import annotations
 
@@ -24,20 +23,6 @@ if TYPE_CHECKING:
 
 
 class EOSPostProcessor(MSONable, ABC):
-    """
-    Fit data to an EOS.
-
-    Parameters
-    ----------
-    name : str
-        Name of the class
-    eos_attrs : tuple[str,...]
-        Physical quantities that can enter the EOS fit
-    job_types : tuple[str,...]
-        Types of jobs included in the EOS data
-    min_data_points : int or None
-        Minimum number of data points needed to perform a fit.
-    """
 
     name: str = "EOS postprocessor"
     eos_attrs: tuple[str, ...] = ("energy", "volume", "stress", "pressure")
@@ -131,36 +116,6 @@ class EOSPostProcessor(MSONable, ABC):
 
 
 class PostProcessEosEnergy(EOSPostProcessor):
-    """
-    Fit energy vs. volume data to an EOS.
-
-    Parameters
-    ----------
-    eos_flow_output : dict
-        Volume, energy, and (optionally) stress and pressure data in dict
-        form::
-
-            {
-                "relax" <required> and "static" <optional> : {
-                    "energy": list, <required>
-                    "volume": list, <required>
-                    "stress": list <optional>
-                },
-                "initial_<key>": {"E0": float, "V0": float} <optional>,
-                    for <key> in ("relax", "static")
-            }
-
-    name : str
-        Name of the class
-    eos_attrs : tuple[str,...]
-        Physical quantities that can enter the EOS fit
-    job_types : tuple[str,...]
-        Types of jobs included in the EOS data
-    min_data_points : int or None
-        Minimum number of data points needed to perform a fit.
-    eos_models : tuple[str,...]
-        List of names of EOSes to fit to.
-    """
 
     name: str = "EOS energy vs volume fit"
     min_data_points: int | None = 4
@@ -190,42 +145,6 @@ class PostProcessEosEnergy(EOSPostProcessor):
 
 
 class PostProcessEosPressure(EOSPostProcessor):
-    """
-    Fit pressure vs. volume data to an EOS.
-
-    Parameters
-    ----------
-    eos_flow_output : dict
-        Volume, energy, and (optionally) stress and pressure data in dict
-        form::
-
-            {
-                "relax" <required> and "static" <optional> : {
-                    "energy": list, <required>
-                    "volume": list, <required>
-                    "stress": list <optional>
-                },
-                "initial_<key>": {"E0": float, "V0": float} <optional>,
-                    for <key> in ("relax", "static")
-            }
-
-    name : str
-        Name of the class
-    eos_attrs : tuple[str,...]
-        Physical quantities that can enter the EOS fit
-    job_types : tuple[str,...]
-        Types of jobs included in the EOS data
-    min_data_points : int or None
-        Minimum number of data points needed to perform a fit.
-
-    If only stresses are specified, it is assumed that the elements of "stress"
-    are 3 x 3 tensors, and the pressure is computed as::
-
-        pressure = Trace(stress tensor)/3
-
-    The overall sign is irrelevant for a successful fit, as the overall sign
-    of the pressure indicates internal/external stress.
-    """
 
     name: str = "EOS pressure vs volume fit"
     min_data_points: int | None = 3
@@ -234,45 +153,7 @@ class PostProcessEosPressure(EOSPostProcessor):
     def _birch_murnaghan_pressure(
         volume: float, b0: float, b1: float, v0: float
     ) -> float:
-        """
-        Compute pressure from Birch-Murnaghan equation of state.
-
-        Parameters
-        ----------
-        volume : float
-            A single volume or list of them to evaluate the pressure.
-        b0 : float
-            The Birch-Murnaghan (BM) bulk modulus at the equilibrium volume V = v0
-        b1 : float
-            The derivative of the bulk modulus wrt pressure at v0
-        v0 : float
-            The equilibrium volume
-
-        Returns
-        -------
-        float : the BM pressure
-
-        BM EOS for E(V) has the form::
-
-            E(V) = E0 + 9 B0 V0 / 16 * (
-                (B1 - 4)*eta**6 + (14 - 3*B1)*eta**4 + (3*B1 - 16)*eta**2 + 6 - B1
-            )
-            eta = (V0/V)**(1/3).
-
-        This function computes p = - dE / dV via the chain rule,::
-
-            p = d E / d eta * (- d eta / dV)
-            = eta**4/(3*V0) * d E / d eta
-
-        """
-        eta = (v0 / volume) ** (1.0 / 3.0)
-        return (
-            3
-            * b0
-            * eta**5
-            / 8.0
-            * (3 * (b1 - 4) * eta**4 + 2 * (14.0 - 3 * b1) * eta**2 + 3 * b1 - 16.0)
-        )
+        pass
 
     def _initial_fit(self) -> dict:
         """Generate initial polynomial fit for p(V) curve.
@@ -325,12 +206,6 @@ class PostProcessEosPressure(EOSPostProcessor):
 
         return init_pars
 
-    def _objective(self, pars: Sequence, jobtype: str) -> float:
-        return np.array(
-            self.results[jobtype]["pressure"]
-        ) - self._birch_murnaghan_pressure(
-            np.array(self.results[jobtype]["volume"]), *pars
-        )
 
     def eval(self) -> None:
         """Fit the input data to the Birch-Murnaghan pressure EOS."""
@@ -378,7 +253,6 @@ def apply_strain_to_structure(structure: Structure, deformations: list) -> list:
     """
     transformations = []
     for deformation in deformations:
-        # deform the structure
         ts = TransformedStructure(
             structure,
             transformations=[DeformStructureTransformation(deformation=deformation)],
@@ -413,7 +287,6 @@ def _apply_strain_to_structure(structure: Structure, deformations: list) -> list
     """
     transformations = []
     for deformation in deformations:
-        # deform the structure
         ts = TransformedStructure(
             structure,
             transformations=[DeformStructureTransformation(deformation=deformation)],
@@ -423,7 +296,6 @@ def _apply_strain_to_structure(structure: Structure, deformations: list) -> list
 
 
 class MPMorphPVPostProcess(PostProcessEosPressure):
-    """Modified  p(V) fit to accommodate MPMorph."""
 
     def eval(self) -> None:
         """Fit the input data to the Birch-Murnaghan pressure EOS."""
@@ -447,7 +319,6 @@ class MPMorphPVPostProcess(PostProcessEosPressure):
 
 
 class MPMorphEVPostProcess(PostProcessEosEnergy):
-    """Modified  E(V) fit to accommodate MPMorph."""
 
     eos_models: tuple[str, ...] = (
         "vinet",

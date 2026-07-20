@@ -1,4 +1,3 @@
-"""Utilities for working with the OPLS forcefield in OpenMM."""
 
 from __future__ import annotations
 
@@ -53,7 +52,6 @@ def download_opls_xml(
             stacklevel=1,
         )
 
-    # Initialize the Chrome driver
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
 
     for name, params in names_params.items():
@@ -65,63 +63,51 @@ def download_opls_xml(
         if final_file.exists() and not overwrite_files:
             continue
         try:
-            # Specify the directory where you want to download files
             with tempfile.TemporaryDirectory() as tmpdir:
                 download_dir = tmpdir
 
-                # Set up Chrome options
                 chrome_options = webdriver.ChromeOptions()
                 prefs = {"download.default_directory": download_dir}
                 chrome_options.add_experimental_option("prefs", prefs)
 
-                # Initialize Chrome with the options
                 driver = webdriver.Chrome(options=chrome_options)
 
-                # Open the first webpage
                 driver.get("https://zarbi.chem.yale.edu/ligpargen/")
 
-                # Find the SMILES input box and enter the SMILES code
                 smiles_input = WebDriverWait(driver, 10).until(
                     ec.presence_of_element_located((By.ID, "smiles"))
                 )
                 smiles_input.send_keys(smiles)
 
-                # Find Molecule Optimization Iterations dropdown menu and select
                 checkopt_input = WebDriverWait(driver, 10).until(
                     ec.presence_of_element_located((By.NAME, "checkopt"))
                 )
                 checkopt_input.send_keys(checkopt)
 
-                # Find Charge dropdown menu and select
                 charge_input = WebDriverWait(driver, 10).until(
                     ec.presence_of_element_located((By.NAME, "dropcharge"))
                 )
                 charge_input.send_keys(charge)
 
-                # Find and click the "Submit Molecule" button
                 submit_button = driver.find_element(
                     By.XPATH,
                     '//button[@type="submit" and contains(text(), "Submit Molecule")]',
                 )
                 submit_button.click()
 
-                # Wait for the second page to load
                 time.sleep(
                     2 + 0.5 * int(checkopt)
                 )  # Adjust based on loading time and optimization iterations
 
-                # Find and click the "XML" button under Downloads and OpenMM
                 xml_button = driver.find_element(
                     By.XPATH, '//input[@type="submit" and @value="XML"]'
                 )
                 xml_button.click()
 
-                # Wait for the file to download
                 time.sleep(0.3)  # Adjust as needed based on the download time
 
                 file = next(Path(tmpdir).iterdir())
 
-                # copy downloaded file to output_file using os
                 shutil.move(file, final_file)
 
         except Exception as e:  # noqa: BLE001
@@ -175,11 +161,9 @@ def generate_opls_xml(
         if final_file.exists() and not overwrite_files:
             continue
         try:
-            # Specify the directory where you want to download files
             with tempfile.TemporaryDirectory() as tmpdir:
                 download_dir = tmpdir
 
-                # Run LigParGen via Shifter / Docker / Apptainer
                 lpg_cmd = [
                     f"ligpargen -n {name} -p {name} "
                     f"-r {name} -c {charge} -o {checkopt} "
@@ -194,7 +178,6 @@ def generate_opls_xml(
 
                 file = Path(download_dir) / f"{name}" / f"{name}.openmm.xml"
 
-                # copy downloaded file to output_file using os
                 output_dir.mkdir(parents=True, exist_ok=True)
                 shutil.move(file, final_file)
 
@@ -229,7 +212,6 @@ def create_list_summing_to(total_sum: int, n_pieces: int) -> list:
 
 def increment_name(file_name: str) -> str:
     """Increment the count in a file name."""
-    # logic to increment count on file name
     re_match = re.search(r"(\d*)$", file_name)
     position = re_match.start(1)
     new_count = int(re_match.group(1) or 1) + 1
@@ -253,32 +235,7 @@ def task_reports(task: OpenMMTaskDocument, traj_or_state: str = "traj") -> bool:
 def openff_to_openmm_interchange(
     openff_interchange: Interchange,
 ) -> OpenMMInterchange:
-    """Convert an OpenFF Interchange object to an OpenMM Interchange object."""
-    integrator = LangevinMiddleIntegrator(
-        300 * omm_unit.kelvin,
-        10.0 / omm_unit.picoseconds,
-        1.0 * omm_unit.femtoseconds,
-    )
-    sim = openff_interchange.to_openmm_simulation(integrator)
-    state = sim.context.getState(
-        getPositions=True,
-        getVelocities=True,
-        enforcePeriodicBox=True,
-    )
-    with io.StringIO() as buffer:
-        PDBFile.writeFile(
-            sim.topology,
-            np.zeros(shape=(sim.topology.getNumAtoms(), 3)),
-            file=buffer,
-        )
-        buffer.seek(0)
-        pdb = buffer.read()
-
-        return OpenMMInterchange(
-            system=XmlSerializer.serialize(sim.system),
-            state=XmlSerializer.serialize(state),
-            topology=pdb,
-        )
+    pass
 
 
 def opls_lj(system: System) -> System:
@@ -308,7 +265,6 @@ def opls_lj(system: System) -> System:
         sigma=sqrt(sigma1*sigma2);
         epsilon=sqrt(epsilon1*epsilon2)"""
     )
-    # sets nonbonded method to Cutoff Periodic if illegal value supplied
     lorentz.setNonbondedMethod(
         min(nonbonded_force.getNonbondedMethod(), NonbondedForce.CutoffPeriodic)
     )
@@ -324,24 +280,14 @@ def opls_lj(system: System) -> System:
         nonbonded_force.setParticleParameters(index, charge, sigma, epsilon * 0)
     for i in range(nonbonded_force.getNumExceptions()):
         (p1, p2, q, _, eps) = nonbonded_force.getExceptionParameters(i)
-        # ALL THE 1-2, 1-3 and 1-4 interactions are EXCLUDED FROM CUSTOM NONBONDED FORCE
         lorentz.addExclusion(p1, p2)
         if eps.value_in_unit(eps.unit) != 0.0:
-            # print p1,p2,sig,eps
             sig14 = omm_unit.sqrt(ljset[p1][0] * ljset[p2][0])
-            # Note: eps14 is in the original reference function provided by ligpargen
-            # however, is not properly scaled by 0.5 and used anywhere in the function
-            # eps14 = sqrt(ljset[p1][1] * ljset[p2][1])
             nonbonded_force.setExceptionParameters(i, p1, p2, q, sig14, eps)
     return system
 
 
 class PymatgenTrajectoryReporter:
-    """Reporter that creates a pymatgen Trajectory from an OpenMM simulation.
-
-    Accumulates structures and velocities during the simulation and writes them to a
-    Trajectory object when the reporter is deleted.
-    """
 
     def __init__(
         self,
@@ -367,7 +313,6 @@ class PymatgenTrajectoryReporter:
         self._topology = None
         self._nextModel = 0
 
-        # Storage for trajectory data
         self._positions: list[np.ndarray] = []
         self._velocities: list[np.ndarray] = []
         self._lattices: list[np.ndarray] = []
@@ -378,22 +323,7 @@ class PymatgenTrajectoryReporter:
     def describeNextReport(  # noqa: N802
         self, simulation: Simulation
     ) -> tuple[int, bool, bool, bool, bool, bool]:
-        """Get information about the next report this object will generate.
-
-        Parameters
-        ----------
-        simulation : Simulation
-            The Simulation to generate a report for
-
-        Returns
-        -------
-        tuple[int, bool, bool, bool, bool, bool]
-            A six element tuple. The first element is the number of steps until the
-            next report. The remaining elements specify whether that report will
-            require positions, velocities, forces, energies, and periodic box info.
-        """
-        steps = self._reportInterval - simulation.currentStep % self._reportInterval
-        return steps, True, True, False, True, self._enforcePeriodicBox
+        pass
 
     def report(self, simulation: Simulation, state: State) -> None:
         """Generate a report.
@@ -414,7 +344,6 @@ class PymatgenTrajectoryReporter:
                 simulation.integrator.getStepSize() * self._reportInterval
             ).value_in_unit(omm_unit.femtoseconds)
 
-        # Get positions and velocities in Angstrom and Angstrom/fs
         positions = state.getPositions(asNumpy=True).value_in_unit(omm_unit.angstrom)
         velocities = state.getVelocities(asNumpy=True).value_in_unit(
             omm_unit.angstrom / omm_unit.femtosecond
@@ -423,7 +352,6 @@ class PymatgenTrajectoryReporter:
             omm_unit.angstrom
         )
 
-        # Get energies in eV
         kinetic_energy = (
             state.getKineticEnergy() / omm_unit.AVOGADRO_CONSTANT_NA
         ).value_in_unit(omm_unit.ev)
@@ -455,12 +383,10 @@ class PymatgenTrajectoryReporter:
             for frame_vel in self._velocities
         ]
 
-        # Format site properties as list of dicts, one per frame
         site_properties = []
         n_frames = len(self._positions)
         site_properties = [{"velocities": velocities[i]} for i in range(n_frames)]
 
-        # Create trajectory with positions and lattices
         trajectory = Trajectory(
             species=self._species,
             coords=self._positions,
@@ -470,9 +396,7 @@ class PymatgenTrajectoryReporter:
             time_step=self._time_step,
         )
 
-        # Store trajectory as a class attribute so it can be accessed after deletion
         self.trajectory = trajectory
 
-        # write out trajectory to a file
         with open(self._file, mode="w") as file:
             file.write(trajectory.to_json())

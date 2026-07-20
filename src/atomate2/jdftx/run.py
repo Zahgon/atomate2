@@ -1,4 +1,3 @@
-"""Functions to run JDFTx."""
 
 from __future__ import annotations
 
@@ -16,10 +15,8 @@ if TYPE_CHECKING:
 
 
 class JobType(ValueEnum):
-    """Type of JDFTx job."""
 
     NORMAL = "normal"
-    # Only running through Custodian now, can add DIRECT method later.
 
 
 def get_jdftx_cmd() -> str:

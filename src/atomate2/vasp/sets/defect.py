@@ -1,4 +1,3 @@
-"""Module defining VASP input set generators for defect calculations."""
 
 from __future__ import annotations
 
@@ -29,162 +28,43 @@ SPECIAL_KPOINT_GAMMA = Kpoints(
 
 @dataclass
 class ChargeStateRelaxSetGenerator(VaspInputGenerator):
-    """Generator for atomic-only relaxation for defect supercell calculations.
-
-    Since the defect cells are assumed to be large, we will use only a single k-point.
-    """
 
     use_structure_charge: bool = True
     user_kpoints_settings: dict | Kpoints = field(default_factory=SPECIAL_KPOINT)
 
     @property
     def incar_updates(self) -> dict:
-        """Get updates to the INCAR for a relaxation job.
-
-        Returns
-        -------
-        dict
-            A dictionary of updates to apply.
-        """
-        return {
-            "IBRION": 1,
-            "ISIF": 2,
-            "EDIFF": 1e-5,
-            "EDIFFG": -0.05,
-            "LREAL": False,
-            "NSW": 99,
-            "ENCUT": 500,
-            "LAECHG": False,
-            "NELMIN": 6,
-            "LCHARG": True,
-            "ISMEAR": 0,
-            "SIGMA": 0.05,
-            "LVHAR": True,
-            "KSPACING": None,
-            "LWAVE": True,
-        }
+        pass
 
 
 @dataclass
 class ChargeStateStaticSetGenerator(VaspInputGenerator):
-    """Generator for static defect supercell calculations.
-
-    Since the defect cells are assumed to be large, we will use only a single k-point.
-    """
 
     use_structure_charge: bool = True
     user_kpoints_settings: dict | Kpoints = field(default_factory=SPECIAL_KPOINT)
 
     @property
     def incar_updates(self) -> dict:
-        """Get updates to the INCAR for a relaxation job.
-
-        Returns
-        -------
-        dict
-            A dictionary of updates to apply.
-        """
-        return {
-            "IBRION": 1,
-            "EDIFF": 1e-5,
-            "EDIFFG": -0.05,
-            "LREAL": False,
-            "NSW": 0,
-            "ENCUT": 500,
-            "LAECHG": False,
-            "NELMIN": 6,
-            "LCHARG": True,
-            "ISMEAR": 0,
-            "SIGMA": 0.05,
-            "LVHAR": True,
-            "KSPACING": None,
-            "LWAVE": True,
-        }
+        pass
 
 
 @dataclass
 class HSEChargeStateRelaxSetGenerator(VaspInputGenerator):
-    """Generator for atomic-only relaxation for defect supercell calculations.
-
-    Since the defect cells are assumed to be large, we will use only a single k-point.
-    """
 
     use_structure_charge: bool = True
     user_kpoints_settings: dict | Kpoints = field(default_factory=SPECIAL_KPOINT)
 
     @property
     def incar_updates(self) -> dict:
-        """Get updates to the INCAR for a relaxation job.
-
-        Returns
-        -------
-        dict
-            A dictionary of updates to apply.
-        """
-        return {
-            "ALGO": "Normal",
-            "IBRION": 1,
-            "LAECHG": False,
-            "ISIF": 2,
-            "EDIFF": 1e-5,
-            "EDIFFG": -0.05,
-            "LREAL": False,
-            "NSW": 99,
-            "ENCUT": 500,
-            "NELMIN": 6,
-            "GGA": "Pe",
-            "LCHARG": False,
-            "ISMEAR": 0,
-            "SIGMA": 0.05,
-            "LVHAR": True,
-            "KSPACING": None,
-            "LDAU": False,
-            "HFSCREEN": 0.2,
-            "LHFCALC": True,
-            "PRECFOCK": "Fast",
-            "LASPH": True,
-            "LWAVE": True,
-        }
+        pass
 
 
 @dataclass
 class HSEChargeStateStaticSetGenerator(VaspInputGenerator):
-    """Generator for HSE static defect supercell calculations.
-
-    Since the defect cells are assumed to be large, we will use only a single k-point.
-    """
 
     use_structure_charge: bool = True
     user_kpoints_settings: dict | Kpoints = field(default_factory=SPECIAL_KPOINT)
 
     @property
     def incar_updates(self) -> dict:
-        """Get updates to the INCAR for a relaxation job.
-
-        Returns
-        -------
-        dict
-            A dictionary of updates to apply.
-        """
-        return {
-            "ALGO": "All",
-            "IBRION": 1,
-            "LAECHG": False,
-            "EDIFF": 1e-5,
-            "EDIFFG": -0.05,
-            "LREAL": False,
-            "NSW": 0,
-            "ENCUT": 500,
-            "NELMIN": 6,
-            "LCHARG": False,
-            "ISMEAR": 0,
-            "SIGMA": 0.05,
-            "LVHAR": True,
-            "KSPACING": None,
-            "LDAU": False,
-            "HFSCREEN": 0.2,
-            "LHFCALC": True,
-            "PRECFOCK": "Fast",
-            "LASPH": True,
-            "LWAVE": True,
-        }
+        pass

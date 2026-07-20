@@ -1,4 +1,3 @@
-"""Utilities for working with the OPLS forcefield in OpenMM."""
 
 from __future__ import annotations
 
@@ -39,7 +38,6 @@ except ImportError as e:
 
 
 class XMLMoleculeFF:
-    """A class for manipulating XML files representing OpenMM-compatible forcefields."""
 
     def __init__(self, xml_string: str) -> None:
         """Create an XMLMoleculeFF object from a string version of the XML file."""
@@ -56,8 +54,6 @@ class XMLMoleculeFF:
         non_to_res_map = {}
         for i, atom in enumerate(root.findall(".//NonbondedForce/Atom")):
             non_to_res_map[i] = canonical_order[atom.attrib["type"]]
-            # self._res_to_non.append(canonical_order[atom.attrib["type"]])
-        # invert map, change to list
         self._res_to_non = [
             k for k, v in sorted(non_to_res_map.items(), key=lambda item: item[1])
         ]
@@ -93,7 +89,6 @@ class XMLMoleculeFF:
     def to_openff_molecule(self) -> tk.Molecule:
         """Convert the XMLMoleculeFF to an openff_toolkit Molecule."""
         if sum(self.partial_charges) > 1e-3:
-            # TODO: update message
             warnings.warn("Formal charges not considered.", stacklevel=1)
 
         p_table = {e.symbol: e.number for e in Element}
@@ -117,16 +112,8 @@ class XMLMoleculeFF:
 
     @property
     def partial_charges(self) -> np.ndarray:
-        """Get the partial charges from the XMLMoleculeFF object."""
-        atoms = self.tree.getroot().findall(".//NonbondedForce/Atom")
-        charges = np.array([float(atom.attrib["charge"]) for atom in atoms])
-        return charges[self._res_to_non]
+        pass
 
-    @partial_charges.setter
-    def partial_charges(self, partial_charges: np.ndarray) -> None:
-        for i, atom in enumerate(self.tree.getroot().findall(".//NonbondedForce/Atom")):
-            charge = partial_charges[self._non_to_res[i]]
-            atom.attrib["charge"] = str(charge)
 
     def assign_partial_charges(self, mol_or_method: tk.Molecule | str) -> None:
         """Assign partial charges to the XMLMoleculeFF object.
@@ -148,8 +135,7 @@ class XMLMoleculeFF:
         self.partial_charges = mol_charges
 
     def to_file(self, file: str | Path) -> None:
-        """Write the XMLMoleculeFF object to an XML file."""
-        self.tree.write(file, encoding="utf-8")
+        pass
 
     @classmethod
     def from_file(cls, file: str | Path) -> XMLMoleculeFF:
@@ -290,7 +276,6 @@ def generate_openmm_interchange(
 
     ff = create_ff_from_xml(xml_mols)
 
-    # obtain 14 scaling values from forcefield
     generator = ff.getGenerators()
     for gen in generator:
         if isinstance(gen, NonbondedGenerator):
@@ -308,8 +293,6 @@ def generate_openmm_interchange(
             )
         system = opls_lj(system)
 
-    # these values don't actually matter because integrator is only
-    # used to generate the state
     integrator = LangevinMiddleIntegrator(
         298 * kelvin, 1 / picoseconds, 1 * picoseconds
     )
@@ -330,7 +313,6 @@ def generate_openmm_interchange(
         topology=pdb,
     )
 
-    # TODO: fix all jsons
     interchange_json = interchange.json()
 
     dir_name = Path.cwd()

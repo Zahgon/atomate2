@@ -1,4 +1,3 @@
-"""Core jobs for running JDFTx calculations."""
 
 from __future__ import annotations
 
@@ -17,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SurfaceMinMaker(BaseJdftxMaker):
-    """Maker to create surface relaxation job."""
 
     name: str = "surface_ionic_min"
     input_set_generator: JdftxInputGenerator = field(
@@ -31,7 +29,6 @@ class SurfaceMinMaker(BaseJdftxMaker):
 
 @dataclass
 class MolMinMaker(BaseJdftxMaker):
-    """Maker to create molecule relaxation job."""
 
     name: str = "surface_ionic_min"
     input_set_generator: JdftxInputGenerator = field(

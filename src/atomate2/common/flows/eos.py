@@ -1,4 +1,3 @@
-"""Define common EOS flow agnostic to electronic-structure code."""
 
 from __future__ import annotations
 
@@ -22,39 +21,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class CommonEosMaker(Maker):
-    """
-    Generate equation of state data.
-
-    First relax a structure using relax_maker.
-    Then perform a series of deformations on the relaxed structure, and
-    evaluate single-point energies with static_maker.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    initial_relax_maker : .Maker | None
-        Maker to relax the input structure, defaults to None (no initial relaxation).
-    eos_relax_maker : .Maker
-        Maker to relax deformed structures for the EOS fit.
-    static_maker : .Maker | None
-        Maker to generate statics after each relaxation, defaults to None.
-    linear_strain : tuple[float]
-        Percentage linear strain to apply as a deformation, default = -5% to 5%.
-    number_of_frames : int
-        Number of strain calculations to do for EOS fit, default = 6.
-    postprocessor : .atomate2.common.jobs.EOSPostProcessor
-        Optional postprocessing step, defaults to
-        `atomate2.common.jobs.PostProcessEosEnergy`.
-    socket : bool
-        Whether to run in socket/batch mode (True: single job performing multiple
-        relaxations/statics). Defaults to creating separate jobs for each
-        relaxation/static (False)
-    _store_transformation_information : .bool = False
-        Whether to store the information about transformations. Unfortunately
-        needed at present to handle issues with emmet and pydantic validation
-        TODO: remove this when clash is fixed
-    """
 
     name: str = "EOS Maker"
     initial_relax_maker: Maker = None
@@ -93,7 +59,6 @@ class CommonEosMaker(Maker):
             for key in job_types
         }
 
-        # First step: optional relaxation of structure
         if self.initial_relax_maker:
             relax_flow = self.initial_relax_maker.make(
                 structure=structure, prev_dir=prev_dir
@@ -133,8 +98,6 @@ class CommonEosMaker(Maker):
         )
 
         if self.initial_relax_maker:
-            # Cell without applied strain already included from relax/equilibrium steps.
-            # Perturb this point (or these points) if included
             zero_strain_mask = np.abs(strain_l) < 1e-15
             if np.any(zero_strain_mask):
                 nzs = len(strain_l[zero_strain_mask])
@@ -143,7 +106,6 @@ class CommonEosMaker(Maker):
 
         deformation_l = [(np.identity(3) * (1.0 + eps)).tolist() for eps in strain_l]
 
-        # apply strain to structures, return list of transformations
         transformations = apply_strain_to_structure(structure, deformation_l)
         jobs["utility"] += [transformations]
 
@@ -187,11 +149,6 @@ class CommonEosMaker(Maker):
             for frame_idx in range(self.number_of_frames):
                 if self._store_transformation_information:
                     with contextlib.suppress(Exception):
-                        # write details of the transformation to the
-                        # transformations.json file. This file will automatically get
-                        # added to the task document and allow the elastic builder
-                        # to reconstruct the elastic document. Note the ":"
-                        # is automatically converted to a "." in the filename.
                         self.eos_relax_maker.write_additional_data[
                             "transformations:json"
                         ] = transformations.output[frame_idx]

@@ -1,4 +1,3 @@
-"""Define Makers for Magnetic ordering flow in FHI-aims."""
 
 from __future__ import annotations
 
@@ -19,17 +18,6 @@ from atomate2.aims.jobs.core import RelaxMaker, StaticMaker
 
 @dataclass
 class MagneticStaticMaker(StaticMaker):
-    """Maker to create FHI-aims SCF jobs.
-
-    Parameters
-    ----------
-    calc_type: str
-        The type key for the calculation
-    name: str
-        The job name
-    input_set_generator: .AimsInputGenerator
-        The InputGenerator for the calculation
-    """
 
     calc_type: str = "magnetic_scf"
     name: str = "Magnetic SCF Calculation"
@@ -40,17 +28,6 @@ class MagneticStaticMaker(StaticMaker):
 
 @dataclass
 class MagneticRelaxMaker(RelaxMaker):
-    """Maker to create relaxation calculations.
-
-    Parameters
-    ----------
-    calc_type: str
-        The type key for the calculation
-    name: str
-        The job name
-    input_set_generator: .AimsInputGenerator
-        The InputGenerator for the calculation
-    """
 
     calc_type: str = "relax"
     name: str = "Magnetic Relaxation calculation"

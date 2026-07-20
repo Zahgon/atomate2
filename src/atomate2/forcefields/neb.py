@@ -1,4 +1,3 @@
-"""Run NEB with ML forcefields."""
 
 from __future__ import annotations
 
@@ -21,7 +20,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class ForceFieldNebFromImagesMaker(ForceFieldMixin, AseNebFromImagesMaker):
-    """Run NEB with an ML forcefield using ASE."""
 
     name: str = "Forcefield NEB from images"
     force_field_name: str | MLFF | dict = MLFF.Forcefield
@@ -46,7 +44,6 @@ class ForceFieldNebFromImagesMaker(ForceFieldMixin, AseNebFromImagesMaker):
 
 @dataclass
 class ForceFieldNebFromEndpointsMaker(ForceFieldMixin, AseNebFromEndpointsMaker):
-    """Run NEB with an ML forcefield using ASE."""
 
     name: str = "Forcefield NEB from endpoints"
     force_field_name: str | MLFF | dict = MLFF.Forcefield
@@ -75,25 +72,4 @@ class ForceFieldNebFromEndpointsMaker(ForceFieldMixin, AseNebFromEndpointsMaker)
         calculator_kwargs: dict | None = None,
         **kwargs,
     ) -> Self:
-        """Create a force field NEB job from its name.
-
-        Parameters
-        ----------
-        force_field_name : str or MLFF or dict
-            The name of the forcefield.
-        calculator_kwargs : dict | None
-            The keyword arguments to pass to the calculator
-        **kwargs
-            kwargs to pass to ForceFieldNebFromEndpointsMaker.
-        """
-        calculator_kwargs = calculator_kwargs or {}
-        endpoint_relax_maker = ForceFieldRelaxMaker(
-            force_field_name=force_field_name, calculator_kwargs=calculator_kwargs
-        )
-        return cls(
-            name=f"{endpoint_relax_maker.mlff.name} NEB from endpoints maker",
-            endpoint_relax_maker=endpoint_relax_maker,
-            force_field_name=force_field_name,
-            calculator_kwargs=calculator_kwargs,
-            **kwargs,
-        )
+        pass

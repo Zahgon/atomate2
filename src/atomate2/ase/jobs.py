@@ -1,4 +1,3 @@
-"""Define general ASE-calculator jobs."""
 
 from __future__ import annotations
 
@@ -34,53 +33,6 @@ _ASE_DATA_OBJECTS = ["trajectory"]
 )
 @dataclass
 class AseMaker(Maker, ABC):
-    """
-    Define basic template of ASE-based jobs.
-
-    This class defines relevant attributes for the ASE TaskDoc
-    schemas, and one method that must be implemented in subclasses:
-    `calculator`: the ASE .Calculator object
-
-    The intent of this class is twofold: if users wish to have a
-    high-throughput way to access a calculator, they need only
-    subclass this class with a calculator defined, e.g., the following
-    is sufficient to define an EMT static calculator with basic I/O:
-
-    ```python
-    from ase.calculators.emt import EMT
-
-
-    @dataclass
-    class EMTStaticMaker(AseMaker):
-        name: str = "EMT static maker"
-
-        def _get_calculator(self):
-            return EMT()
-    ```
-
-    Note that the user should adapt `run_ase`, which is not a job
-    and makes a call to ASE, and `make`, which is a job, to their uses.
-
-    `run_ase` should return an `AseResult` which has basic calculation info.
-    `make` should return a pydantic-based document model with more details.
-
-    Parameters
-    ----------
-    name: str
-        The name of the job
-    calculator_kwargs : dict
-        Keyword arguments that will get passed to the ASE calculator.
-    ionic_step_data : tuple[str,...] or None
-        Quantities to store in the TaskDocument ionic_steps.
-        Possible options are "struct_or_mol", "energy",
-        "forces", "stress", and "magmoms".
-        "structure" and "molecule" are aliases for "struct_or_mol".
-    store_trajectory : emmet .StoreTrajectoryOption = "no"
-        Whether to store trajectory information ("no") or complete trajectories
-        ("partial" or "full", which are identical).
-    tags : list[str] or None
-        A list of tags for the task.
-    """
 
     name: str = "ASE maker"
     calculator_kwargs: dict = field(default_factory=dict)
@@ -177,55 +129,11 @@ class AseMaker(Maker, ABC):
 
     @property
     def calculator(self) -> Calculator:
-        """Retrieve cached ASE calculator."""
-        if getattr(self, "_calculator", None) is None:
-            self._calculator = self._get_calculator()
-        if self._calculator is None:
-            raise ValueError("ASE calculator not properly initialized.")
-        return self._calculator
+        pass
 
 
 @dataclass
 class AseRelaxMaker(AseMaker):
-    """
-    Base Maker to calculate forces and stresses using any ASE calculator.
-
-    Should be subclassed to use a specific ASE. The user should
-    define `self.calculator` when subclassing.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    relax_cell : bool = True
-        Whether to allow the cell shape/volume to change during relaxation.
-    relax_shape : bool = False
-        Whether to allow the cell shape to relax at fixed volume.
-        Cannot be used together with `relax_cell=True`.
-    fix_symmetry : bool = False
-        Whether to fix the symmetry during relaxation.
-        Refines the symmetry of the initial structure.
-    symprec : float | None = 1e-2
-        Tolerance for symmetry finding in case of fix_symmetry.
-    steps : int
-        Maximum number of ionic steps allowed during relaxation.
-    relax_kwargs : dict
-        Keyword arguments that will get passed to :obj:`AseRelaxer.relax`.
-    optimizer_kwargs : dict
-        Keyword arguments that will get passed to :obj:`AseRelaxer()`.
-    calculator_kwargs : dict
-        Keyword arguments that will get passed to the ASE calculator.
-    ionic_step_data : tuple[str,...] or None
-        Quantities to store in the TaskDocument ionic_steps.
-        Possible options are "struct_or_mol", "energy",
-        "forces", "stress", and "magmoms".
-        "structure" and "molecule" are aliases for "struct_or_mol".
-    store_trajectory : emmet .StoreTrajectoryOption = "no"
-        Whether to store trajectory information ("no") or complete trajectories
-        ("partial" or "full", which are identical).
-    tags : list[str] or None
-        A list of tags for the task.
-    """
 
     name: str = "ASE relaxation"
     relax_cell: bool = True
@@ -327,51 +235,24 @@ class AseRelaxMaker(AseMaker):
 
 @dataclass
 class EmtRelaxMaker(AseRelaxMaker):
-    """
-    Relax a structure with an EMT potential.
-
-    This serves mostly as an example of how to create atomate2
-    jobs with existing ASE calculators, and test purposes.
-
-    See `atomate2.ase.AseRelaxMaker` for further documentation.
-    """
 
     name: str = "EMT relaxation"
 
     def _get_calculator(self) -> Calculator:
-        """EMT calculator."""
-        from ase.calculators.emt import EMT
-
-        return EMT(**self.calculator_kwargs)
+        pass
 
 
 @dataclass
 class LennardJonesRelaxMaker(AseRelaxMaker):
-    """
-    Relax a structure with a Lennard-Jones 6-12 potential.
-
-    This serves mostly as an example of how to create atomate2
-    jobs with existing ASE calculators, and test purposes.
-
-    See `atomate2.ase.AseRelaxMaker` for further documentation.
-    """
 
     name: str = "Lennard-Jones 6-12 relaxation"
 
     def _get_calculator(self) -> None:
-        """Lennard-Jones calculator."""
-        from ase.calculators.lj import LennardJones
-
-        return LennardJones(**self.calculator_kwargs)
+        pass
 
 
 @dataclass
 class LennardJonesStaticMaker(LennardJonesRelaxMaker):
-    """
-    Single-point Lennard-Jones 6-12 potential calculation.
-
-    See `atomate2.ase.AseRelaxMaker` for further documentation.
-    """
 
     name: str = "Lennard-Jones 6-12 static"
     steps: int = 1
@@ -379,23 +260,6 @@ class LennardJonesStaticMaker(LennardJonesRelaxMaker):
 
 @dataclass
 class GFNxTBRelaxMaker(AseRelaxMaker):
-    """
-    Relax a structure with TBLite (GFN-xTB).
-
-    If you use TBLite in your work, consider citing:
-    H. Neugebauer, B. Bädorf, S. Ehlert, A. Hansen, and S. Grimme,
-    J. Comput. Chem. 44, 2120 (2023).
-
-    If you use GFN1-xTB, consider citing:
-    S. Grimme, C. Bannwarth, and P. Shushkov,
-    J. Chem. Theory Comput. 13, 1989 (2017).
-
-    If you use GFN2-xTB, consider citing:
-    C. Bannwarth, S. Ehlert, and S. Grimme
-    J. Chem. Theory Comput. 15, 1652 (2019)
-
-    See `atomate2.ase.AseRelaxMaker` for further documentation.
-    """
 
     name: str = "GFN-xTB relaxation"
     calculator_kwargs: dict = field(
@@ -416,25 +280,11 @@ class GFNxTBRelaxMaker(AseRelaxMaker):
     )
 
     def _get_calculator(self) -> None:
-        """GFN-xTB / TBLite calculator."""
-        try:
-            from tblite.ase import TBLite
-        except ImportError:
-            raise ImportError(
-                "TBLite must be installed; please install TBLite using\n"
-                "`pip install -c conda-forge tblite-python`"
-            ) from None
-
-        return TBLite(atoms=None, **self.calculator_kwargs)
+        pass
 
 
 @dataclass
 class GFNxTBStaticMaker(GFNxTBRelaxMaker):
-    """
-    Single-point GFNn-xTB calculation.
-
-    See `atomate2.ase.{AseRelaxMaker, GFNxTBRelaxMaker}` for further documentation.
-    """
 
     name: str = "GFN-xTB static"
     steps: int = 1

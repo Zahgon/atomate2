@@ -1,7 +1,3 @@
-"""A workflow to evaluate the anharmonicity of a material with sigma^A.
-
-For details see: doi.org/10.1103/PhysRevMaterials.4.083809
-"""
 
 from __future__ import annotations
 
@@ -35,20 +31,6 @@ SUPPORTED_CODES = ["aims"]
 
 @dataclass
 class BaseAnharmonicityMaker(Maker, ABC):
-    """
-    Maker to calculate the anharmonicity score of a material.
-
-    Calculate sigma^A as defined in doi.org/10.1103/PhysRevMaterials.4.083809, by
-    first calculating the phonons for a material and then generating the one-shot
-    sample and calculating the DFT and harmonic forces.
-
-    Parameters
-    ----------
-    name: str
-        Name of the flows produced by this maker.
-    phonon_maker: BasePhononMaker
-        The maker to generate the phonon model
-    """
 
     name: str = "anharmonicity"
     phonon_maker: BasePhononMaker = None
@@ -206,8 +188,6 @@ class BaseAnharmonicityMaker(Maker, ABC):
         Flow
             The anharmonicity quantification workflow
         """
-        # KB: Not always an error. There could be negative acoustic modes from
-        # unconverged phonon calculations.
         if phonon_doc.has_imaginary_modes:
             warn(
                 "The phonon model has imaginary modes, sampling maybe incorrect.",
@@ -244,7 +224,6 @@ class BaseAnharmonicityMaker(Maker, ABC):
         )
         jobs.append(displacement_calcs)
 
-        # Get DFT and harmonic forces
         force_calcs = get_forces(
             phonon_doc.force_constants,
             phonon_supercell,
@@ -252,7 +231,6 @@ class BaseAnharmonicityMaker(Maker, ABC):
         )
         jobs.append(force_calcs)
 
-        # Calculate all desired sigma^A types
         sigma_calcs = get_sigmas(
             force_calcs.output[0],
             force_calcs.output[1],

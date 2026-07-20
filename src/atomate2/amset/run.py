@@ -1,4 +1,3 @@
-"""Module defining functions to run amset."""
 
 from __future__ import annotations
 
@@ -14,8 +13,6 @@ _CONVERGENCE_PROPERTIES = ("mobility.overall", "seebeck")
 
 def run_amset() -> None:
     """Run amset in the current directory."""
-    # Run AMSET using the command line as calling from python can cause issues
-    # with multiprocessing
     with open("std_out.log", "w") as f_std, open("std_err.log", "w") as f_err:
         subprocess.call(["amset", "run"], stdout=f_std, stderr=f_err)  # noqa: S607
 
@@ -60,7 +57,6 @@ def check_converged(
         diff = np.abs((new_avg - old_avg) / new_avg)
         diff[~np.isfinite(diff)] = 0
 
-        # don't check convergence of very small numbers due to numerical noise
         less_than_one = (np.abs(new_avg) < 1) & (np.abs(old_avg) < 1)
         element_converged = less_than_one | (diff <= tolerance)
         if not np.all(element_converged):

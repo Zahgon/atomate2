@@ -1,4 +1,3 @@
-"""Flows for calculating elastic constants."""
 
 from __future__ import annotations
 
@@ -30,55 +29,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class BaseElasticMaker(Maker, ABC):
-    """
-    Maker to calculate elastic constants.
-
-    Calculate the elastic constant of a material. Initially, a tight structural
-    relaxation is performed to obtain the structure in a state of approximately zero
-    stress. Subsequently, perturbations are applied to the lattice vectors and the
-    resulting stress tensor is calculated from DFT, while allowing for relaxation of the
-    ionic degrees of freedom. Finally, constitutive relations from linear elasticity,
-    relating stress and strain, are employed to fit the full 6x6 elastic tensor. From
-    this, aggregate properties such as Voigt and Reuss bounds on the bulk and shear
-    moduli are derived.
-
-    .. Note::
-        It is heavily recommended to symmetrize the structure before passing it to
-        this flow. Otherwise, the symmetry reduction routines will not be as
-        effective at reducing the total number of deformations needed.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    order : int
-        Order of the tensor expansion to be determined. Can be either 2 or 3.
-    sym_reduce : bool
-        Whether to reduce the number of deformations using symmetry.
-    symprec : float
-        Symmetry precision to use in the reduction of symmetry.
-    bulk_relax_maker : .BaseVaspMaker or .ForceFieldRelaxMaker or None
-        A maker to perform a tight relaxation on the bulk. Set to ``None`` to skip the
-        bulk relaxation.
-    elastic_relax_maker : .BaseVaspMaker or .ForceFieldRelaxMaker
-        Maker used to generate elastic relaxations.
-    max_failed_deformations: int or float
-        Maximum number of deformations allowed to fail to proceed with the fitting
-        of the elastic tensor. If an int the absolute number of deformations. If
-        a float between 0 an 1 the maximum fraction of deformations. If None any
-        number of deformations allowed.
-    generate_elastic_deformations_kwargs : dict
-        Keyword arguments passed to :obj:`generate_elastic_deformations`.
-    fit_elastic_tensor_kwargs : dict
-        Keyword arguments passed to :obj:`fit_elastic_tensor`.
-    task_document_kwargs : dict
-        Additional keyword args passed to :obj:`.ElasticDocument.from_stresses()`.
-    socket : bool
-        If True, uses the socket-io interface to run all deformations in a single
-        job, reducing overhead. In the specific case of TorchSim, this enables batching
-        of all structure relaxations.
-        Note: socket=True is not supported for BaseVaspMaker.
-    """
 
     name: str = "elastic"
     order: int = 2
@@ -124,7 +74,6 @@ class BaseElasticMaker(Maker, ABC):
         jobs = []
 
         if self.bulk_relax_maker is not None:
-            # optionally relax the structure
             bulk_kwargs = {}
             if self.prev_calc_dir_argname is not None:
                 bulk_kwargs[self.prev_calc_dir_argname] = prev_dir
@@ -167,7 +116,6 @@ class BaseElasticMaker(Maker, ABC):
             **self.task_document_kwargs,
         )
 
-        # allow some of the deformations to fail
         fit_tensor.config.on_missing_references = OnMissing.NONE
 
         jobs += [deformations, deformation_calcs, fit_tensor]
@@ -180,14 +128,7 @@ class BaseElasticMaker(Maker, ABC):
 
     @property
     def stress_sign_correction(self) -> float:
-        r"""Correct the sign of the stress tensor.
-
-        This is done because VASP defines the stress tensor to be
-            \sigma_ij = -\partial E / \partial n_ij
-        and FHI-aims defines it to be
-            \sigma_ij = \partial E / \partial n_ij
-        """
-        return 1.0
+        pass
 
     @property
     @abstractmethod

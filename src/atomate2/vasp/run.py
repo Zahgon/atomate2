@@ -1,4 +1,3 @@
-"""Functions to run VASP."""
 
 from __future__ import annotations
 
@@ -58,19 +57,6 @@ logger = logging.getLogger(__name__)
 
 
 class JobType(ValueEnum):
-    """
-    Type of VASP job.
-
-    - ``DIRECT``: Run VASP without using custodian.
-    - ``NORMAL``: Normal custodian :obj:`.VaspJob`.
-    - ``DOUBLE_RELAXATION``: Custodian double relaxation run from
-      :obj:`.VaspJob.double_relaxation_run`.
-    - ``METAGGA_OPT``: Custodian meta-GGA optimization run from
-      :obj:`.VaspJob.metagga_opt_run`.
-    - ``FULL_OPT``: Custodian full optimization run from
-      :obj:`.VaspJob.full_opt_run`.
-    - ``NEB``: Run a VASP NEB job.
-    """
 
     DIRECT = "direct"
     NORMAL = "normal"
@@ -212,11 +198,6 @@ def should_stop_children(
 
 
 class VaspNebFilesValidator(Validator):
-    """
-    Validate VASP files for NEB jobs.
-
-    Analog of custodian's VaspFilesValidator for NEB runs.
-    """
 
     def check(self, base_directory: str | Path = "./") -> bool:
         """

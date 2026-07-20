@@ -1,4 +1,3 @@
-"""Jobs for defect calculations."""
 
 from __future__ import annotations
 
@@ -55,7 +54,6 @@ def calculate_finite_diff(
     fc = FileClient()
     copy_vasp_outputs(ref_calc_dir, additional_vasp_files=["WAVECAR"], file_client=fc)
 
-    # Update the INCAR for the WSWQ calculation
     incar = Incar.from_file("INCAR")
     incar.update(ALGO="None", NSW=0, LWAVE=False, LWSWQ=True)
     incar.write_file("INCAR")
@@ -63,7 +61,6 @@ def calculate_finite_diff(
     d_dir_names = [strip_hostname(d) for d in distorted_calc_dirs]
 
     for idx, dir_name in enumerate(d_dir_names):
-        # Copy a distorted WAVECAR to WAVECAR.qqq
         copy_files(dir_name, include_files=["WAVECAR.gz"], prefix="qqq.")
         gunzip_files(include_files="qqq.WAVECAR*", allow_missing=True)
         rename_files({"qqq.WAVECAR": "WAVECAR.qqq"})

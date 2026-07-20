@@ -1,4 +1,3 @@
-"""Materials Virtual Lab (MVL) VASP flows."""
 
 from __future__ import annotations
 
@@ -19,20 +18,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class MVLGWBandStructureMaker(Maker):
-    """
-    Maker to generate VASP band structures with Materials Virtual Lab GW setup.
-
-    .. warning::
-        This workflow is only compatible with the Materials Virtual Lab GW setup,
-        and it may require additional benchmarks. Please use with caution.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    gw_maker : .BaseVaspMaker
-        The maker to use for the GW calculation.
-    """
 
     name: str = "MVL G0W0 band structure"
     static_maker: BaseVaspMaker = field(default_factory=MVLStaticMaker)

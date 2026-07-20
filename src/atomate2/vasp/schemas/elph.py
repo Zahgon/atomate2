@@ -1,4 +1,3 @@
-"""Schemas for electron-phonon renormalisation documents."""
 
 import logging
 
@@ -14,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class RawElectronicData(BaseModel):
-    """Raw data used to fit electron-phonon renormalisation."""
 
     displacement_uuids: list[str] = Field(
         None, description="UUIDs of the displacement band structure calculations"
@@ -71,7 +69,6 @@ class RawElectronicData(BaseModel):
 
 
 class ElectronPhononRenormalisationDoc(StructureMetadata):
-    """Electron-phonon band gap renormalisation document."""
 
     structure: Structure = Field(
         None,
@@ -169,7 +166,6 @@ class ElectronPhononRenormalisationDoc(StructureMetadata):
                 "spin paired. Cannot continue."
             )
 
-        # check all displacement calculations match magnetism of bulk
         if (
             bulk_band_structure.is_spin_polarized
             != displacement_band_structures[0].is_spin_polarized
@@ -179,7 +175,6 @@ class ElectronPhononRenormalisationDoc(StructureMetadata):
                 "displacement band structures"
             )
 
-        # discard metallic displacement calculations and log the issue
         keep = []
         for idx, band_structure in enumerate(displacement_band_structures):
             if band_structure.is_metal():

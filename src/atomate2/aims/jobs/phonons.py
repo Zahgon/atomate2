@@ -1,4 +1,3 @@
-"""Define the PhononDisplacementMakers for FHI-aims."""
 
 from dataclasses import dataclass, field
 
@@ -11,20 +10,6 @@ from atomate2.aims.jobs.core import SocketIOStaticMaker
 
 @dataclass
 class PhononDisplacementMaker(BaseAimsMaker):
-    """
-    Maker to perform a static calculation as a part of the finite displacement method.
-
-    The input set is for a static run with tighter convergence parameters.
-    Both the k-point mesh density and convergence parameters
-    are stricter than a normal relaxation.
-
-    Parameters
-    ----------
-    name: str
-        The job name.
-    input_set_generator: .AimsInputGenerator
-        A generator used to make the input set.
-    """
 
     name: str = "phonon static aims"
 
@@ -38,20 +23,6 @@ class PhononDisplacementMaker(BaseAimsMaker):
 
 @dataclass
 class PhononDisplacementMakerSocket(SocketIOStaticMaker):
-    """
-    Maker to perform a static calculation as a part of the finite displacement method.
-
-    The input set is for a static run with tighter convergence parameters.
-    Both the k-point mesh density and convergence parameters
-    are stricter than a normal relaxation.
-
-    Parameters
-    ----------
-    name: str
-        The job name.
-    input_set_generator: .AimsInputGenerator
-        A generator used to make the input set.
-    """
 
     name: str = "phonon static aims socket"
 

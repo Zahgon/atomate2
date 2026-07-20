@@ -1,4 +1,3 @@
-"""Utilities for testing VASP calculations."""
 
 from __future__ import annotations
 
@@ -91,32 +90,10 @@ def monkeypatch_vasp(
         TODO: potcar_spec should have the nelect data somehow.
     """
 
-    def mock_run_vasp(*_args, **_kwargs) -> None:
-        name = CURRENT_JOB.job.name
-        try:
-            ref_path = vasp_test_dir / _REF_PATHS[name]
-        except KeyError:
-            raise ValueError(
-                f"no reference directory found for job {name!r}; "
-                f"reference paths received={_REF_PATHS}"
-            ) from None
-
-        if "json" in str(ref_path).lower():
-            with TemporaryDirectory() as temp_ref_dir:
-                ref_data = VaspTestData(**loadfn(ref_path))
-                ref_data.reconstruct(out_path=temp_ref_dir)
-                fake_run_vasp(Path(temp_ref_dir), **_FAKE_RUN_VASP_KWARGS.get(name, {}))
-        else:
-            fake_run_vasp(ref_path, **_FAKE_RUN_VASP_KWARGS.get(name, {}))
 
     get_input_set_orig = VaspInputGenerator.get_input_set
 
-    def mock_get_input_set(self: VaspInputGenerator, *_args, **_kwargs) -> VaspInput:
-        _kwargs["potcar_spec"] = True
-        return get_input_set_orig(self, *_args, **_kwargs)
 
-    def mock_nelect(*_args, **_kwargs) -> int:
-        return nelect
 
     monkeypatch.setattr(atomate2.vasp.run, "run_vasp", mock_run_vasp)
     monkeypatch.setattr(atomate2.vasp.jobs.base, "run_vasp", mock_run_vasp)
@@ -126,9 +103,6 @@ def monkeypatch_vasp(
     monkeypatch.setattr(VaspInputSet, "get_input_set", mock_get_input_set)
     monkeypatch.setattr(VaspInputSet, "nelect", mock_nelect)
 
-    def _run(ref_paths: dict, fake_run_vasp_kwargs: dict | None = None) -> None:
-        _REF_PATHS.update(ref_paths)
-        _FAKE_RUN_VASP_KWARGS.update(fake_run_vasp_kwargs or {})
 
     yield _run
 
@@ -185,7 +159,6 @@ def fake_run_vasp(
     if "potcar" in check_inputs:
         _check_potcar(ref_path)
 
-    # This is useful to check if the WAVECAR has been copied
     if "wavecar" in check_inputs and not Path("WAVECAR").exists():
         raise ValueError("WAVECAR was not correctly copied")
 
@@ -195,7 +168,6 @@ def fake_run_vasp(
         _clear_vasp_inputs()
     _copy_vasp_outputs(ref_path)
 
-    # pretend to run VASP by copying pre-generated outputs from reference dir
     logger.info("Generated fake vasp outputs")
 
 
@@ -250,7 +222,6 @@ def _check_kpoints(ref_path: Path) -> None:
                 f"ref file {ref_kpt_path}"
             )
     else:
-        # check k-spacing
         user_incar = Incar.from_file(zpath("INCAR"))
         ref_incar_path = zpath(ref_path / "inputs" / "INCAR")
         ref_incar = Incar.from_file(ref_incar_path)
@@ -278,9 +249,6 @@ def _check_poscar(
     user_frac_coords = user_poscar.structure.frac_coords
     ref_frac_coords = ref_poscar.structure.frac_coords
 
-    # In some cases, the ordering of sites can change when copying input files.
-    # To account for this, we check that the sites are the same, within a tolerance,
-    # while accounting for PBC.
     coord_match = [
         in_coord_list_pbc(ref_frac_coords, coord, atol=1e-3)
         for coord in user_frac_coords
@@ -353,44 +321,11 @@ def _copy_vasp_outputs(ref_path: Path) -> None:
 
 
 class TestData(BaseModel):
-    """
-    Utility class to group VASP testing data.
-
-    This is the base class, for creating an archive of test data,
-    use `VaspTestData.from_directory` on a valid VASP calculation directory.
-
-    This class also defines methods to establish appropriate directory
-    structure for VASP test data, without user intervention:
-
-    base_dir :
-        - inputs
-            - INCAR
-            - KPOINTS (optional)
-            - POSCAR
-            - POTCAR.spec
-        - outputs
-            - INCAR
-            - KPOINTS (optional)
-            - POSCAR
-            - POTCAR.spec
-            - CONTCAR
-            - OUTCAR
-            - vasprun.xml
-    """
 
     @model_validator(mode="before")
     @classmethod
     def serialize_from_str(cls, config: dict) -> dict:
-        """Ensure class objects are serialized as defined in schema."""
-        init_keys = list(config)
-        for _k in init_keys:
-            k = _k.replace(".", "_")
-            field_class = cls._resolve_non_null_class(cls.model_fields[k].annotation)[0]
-            if hasattr(field_class, "from_str") and isinstance(config[_k], str):
-                config[k] = field_class.from_str(config[_k])
-            if k != _k:
-                config[k] = config.pop(_k)
-        return config
+        pass
 
     @staticmethod
     def flatten_dict(dct: dict, separator: str = ".") -> dict[str, str | bytes]:
@@ -544,14 +479,7 @@ class TestData(BaseModel):
         return self._to_dict({}, prefix=prefix, suffix=suffix)
 
     def to_file(self, file_name: str | Path) -> None:
-        """
-        Dump the dict representation of the test data to a file.
-
-        Parameters
-        ----------
-        file_name : str or Path
-        """
-        dumpfn(self.to_dict(), file_name)
+        pass
 
     def reconstruct(
         self, out_path: str | Path | None = None, copy_input: bool = True
@@ -585,18 +513,6 @@ class TestData(BaseModel):
 
 
 class VaspInputTestData(TestData):
-    """
-    Schema for input VASP test data.
-
-    Fields
-    -------
-    INCAR : pymatgen.io.vasp.inputs.Incar (optional)
-    KPOINTS : pymatgen.io.vasp.inputs.Kpoints (optional)
-    POSCAR : pymatgen.io.vasp.inputs.Poscar (optional)
-    POTCAR : pymatgen.io.vasp.inputs.Potcar (optional)
-    POTCAR_spec : str (optional)
-        These are just the POTCAR symbols.
-    """
 
     INCAR: Incar | None = None
     KPOINTS: Kpoints | None = None
@@ -606,17 +522,6 @@ class VaspInputTestData(TestData):
 
 
 class VaspOutputTestData(TestData):
-    """
-    Schema for output VASP test data.
-
-    Fields
-    -------
-    CONTCAR : pymatgen.io.vasp.inputs.Poscar (optional)
-    OUTCAR : str (optional)
-    vasprun_xml : str (optional)
-    WAVECAR : str (optional)
-    CHGCAR : str (optional)
-    """
 
     CONTCAR: Poscar | None = None
     OUTCAR: str | None = None
@@ -626,31 +531,6 @@ class VaspOutputTestData(TestData):
 
 
 class VaspTestData(TestData):
-    """
-    Schema for a single VASP calculation test data.
-
-    Use this class to automatically generate test data
-    from a single VASP calculation directory, using the
-    `from_directory` method:
-
-    ```python
-    vasp_data = VaspTestData.from_directory("path to VASP calculation")
-    vasp_data.to_file("name of output file.json")
-    ```
-
-    You can use any compression supported by monty.io.zopen.
-
-    Note, if you want original inputs files, add this Field to a subclass:
-
-    ```python
-    inputs_orig: VaspInputTestData | None = None
-    ```
-
-    Fields
-    -------
-    inputs : VaspInputTestData (optional)
-    outputs : VaspOutputTestData (optional)
-    """
 
     inputs: VaspInputTestData | None = None
     outputs: VaspOutputTestData | None = None

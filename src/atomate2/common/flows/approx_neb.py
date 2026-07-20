@@ -1,4 +1,3 @@
-"""Define ApproxNEB flows for all calculators."""
 
 from __future__ import annotations
 
@@ -29,30 +28,6 @@ if TYPE_CHECKING:
 @due.dcite(Doi("https://doi.org/10.1063/1.4960790"), description="ApproxNEB")
 @dataclass
 class CommonApproxNebMaker(Maker):
-    """Run an ApproxNEB workflow.
-
-    Parameters
-    ----------
-    name : str = "ApproxNEB"
-        Name of the workflow
-    host_relax_maker : Maker
-        Optional, a maker to relax the input host structure.
-    image_relax_maker : Maker
-        Required, a maker to relax the ApproxNEB endpoints and images.
-    endpoint_relax_maker : Maker or None (default)
-        Optional maker to relax the endpoints that could differ from the
-        relax maker used on the intermediate images.
-        If None, this is set to `image_relax_maker`.
-    selective_dynamics_scheme : "fix_two_atoms" (default) or None
-        If "fix_two_atoms", uses the default selective dynamics scheme of ApproxNEB,
-        wherein the migrating ion and the ion farthest from it are the only
-        ions whose positions can relax.
-    min_hop_distance : float or bool (default = True)
-        If a float, skips any hops where the working ion moves a distance less
-        than min_hop_distance.
-        If True, min_hop_distance is set to twice the average ionic radius.
-        If False, no checks are made.
-    """
 
     name: str = "ApproxNEB"
     host_relax_maker: Maker | None = None
@@ -101,11 +76,9 @@ class CommonApproxNebMaker(Maker):
         Flow
             A flow performing AppoxNEB calculations
         """
-        # compatibility with legacy input (list)
         if isinstance(inserted_coords_dict, list):
             inserted_coords_dict = dict(enumerate(inserted_coords_dict))
 
-        # Check to see that all hop indices are included in the dict of endpoints
         unique_ep_idxs = set()
         for combo in inserted_coords_combo:
             unique_ep_idxs.update([int(idx) for idx in combo.split("+")])
@@ -121,7 +94,6 @@ class CommonApproxNebMaker(Maker):
 
         jobs: list[Job] = []
 
-        # assign job to relax host structure
         if self.host_relax_maker:
             host_relax_job = self.host_relax_maker.make(
                 host_structure, prev_dir=prev_dir
@@ -131,7 +103,6 @@ class CommonApproxNebMaker(Maker):
             host_structure = host_relax_job.output.structure
             prev_dir = host_relax_job.output.dir_name
 
-        # assign jobs to relax endpoint structures
         ep_relax_jobs = get_endpoints_and_relax(
             host_structure=host_structure,
             working_ion=working_ion,
@@ -140,7 +111,6 @@ class CommonApproxNebMaker(Maker):
             relax_maker=self.endpoint_relax_maker or self.image_relax_maker,
         )
 
-        # run pathfinder (and selective dynamics) to get image structure input
         image_relax_jobs = get_images_and_relax(
             working_ion=working_ion,
             ep_output=ep_relax_jobs.output,
@@ -161,7 +131,6 @@ class CommonApproxNebMaker(Maker):
             min_images_per_hop=min_images_per_hop,
         )
 
-        # to permit the flow to succeed even when prior jobs fail
         collect_output.config.on_missing_references = OnMissing.NONE
 
         return Flow(
@@ -176,58 +145,7 @@ class CommonApproxNebMaker(Maker):
         prev_dir: str | Path | None = None,
         atomate_compat_labels: bool = False,
     ) -> Flow:
-        """
-        Make an ApproxNEB flow from an emmet MigrationGraphDoc.
-
-        Parameters
-        ----------
-        migration_graph_doc: MigrationGraph
-            Migration graph containing information about the host structure,
-            inserted coordinates, etc.
-        n_images: int
-            number of images for the ApproxNEB calculation
-        prev_dir: str or .Path or None (default)
-            A previous calculation directory to copy outputs from.
-        atomate_compat_labels : bool = False
-            Whether to use atomate style labeling of the endpoints (True)
-            or the original labels from the MigrationGraphDoc (False, default)
-
-        Returns
-        -------
-        Flow
-            A flow performing AppoxNEB calculations
-        """
-        inserted_coords, inserted_coords_combo, mapping = (
-            MigrationGraphDoc.get_distinct_hop_sites(
-                migration_graph_doc.inserted_ion_coords,
-                migration_graph_doc.insert_coords_combo,
-            )
-        )
-        if not atomate_compat_labels:
-            inserted_coords_combo = [mapping[k] for k in inserted_coords_combo]
-            site_idx_map = {}
-            for k, v in mapping.items():
-                start_idx_new, end_idx_new = k.split("+")
-                start_idx_old, end_idx_old = v.split("+")
-                site_idx_map.update(
-                    {start_idx_new: start_idx_old, end_idx_new: end_idx_old}
-                )
-            inserted_coords = {
-                site_idx_map[str(idx)]: coords
-                for idx, coords in enumerate(inserted_coords)
-            }
-
-        composition = migration_graph_doc.working_ion_entry.composition.remove_charges()
-        working_ion = next(ele.value for ele in composition)
-
-        return self.make(
-            host_structure=migration_graph_doc.matrix_supercell_structure,
-            working_ion=working_ion,
-            inserted_coords_dict=inserted_coords,
-            inserted_coords_combo=inserted_coords_combo,
-            n_images=n_images,
-            prev_dir=prev_dir,
-        )
+        pass
 
     def get_charge_density(self, *args, **kwargs) -> VolumetricData:
         """Get charge density, to be implemented in subclasses.
@@ -241,24 +159,6 @@ class CommonApproxNebMaker(Maker):
 
 @dataclass
 class ApproxNebFromEndpointsMaker(Maker):
-    """
-    Create an ApproxNEB flow from specified endpoints.
-
-    image_relax_maker : Maker
-        Maker to relax both endpoints and images
-    selective_dynamics_scheme : "fix_two_atoms" (default) or None
-        If "fix_two_atoms", uses the default selective dynamics scheme of ApproxNEB,
-        wherein the migrating ion and the ion farthest from it are the only
-        ions whose positions can relax.
-    min_images_per_hop : int or None
-        If an int, the minimum number of image calculations per hop that
-        must succeed to mark a hop as successfully calculated.
-    min_hop_distance : float or bool (default = True)
-        If a float, skips any hops where the working ion moves a distance less
-        than min_hop_distance.
-        If True, min_hop_distance is set to twice the average ionic radius.
-        If False, no checks are made.
-    """
 
     image_relax_maker: Maker
     name: str = "ApproxNEB single hop from endpoints maker"

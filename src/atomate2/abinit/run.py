@@ -1,4 +1,3 @@
-"""Functions to run ABINIT."""
 
 from __future__ import annotations
 
@@ -40,8 +39,6 @@ def run_abinit(
     if wall_time is not None:
         abinit_timelimit = wall_time
         if abinit_timelimit > 480:
-            # TODO: allow tuning this timelimit buffer for abinit,
-            #  e.g. using a config variable or possibly per job
             abinit_timelimit -= 240
         command.extend(["--timelimit", time2slurm(abinit_timelimit)])
         max_end_time = start_time + wall_time

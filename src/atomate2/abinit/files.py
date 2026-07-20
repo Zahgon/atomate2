@@ -1,4 +1,3 @@
-"""Functions for manipulating Abinit files."""
 
 from __future__ import annotations
 

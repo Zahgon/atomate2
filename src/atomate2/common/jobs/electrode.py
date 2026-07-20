@@ -1,4 +1,3 @@
-"""Jobs for electrode analysis."""
 
 from __future__ import annotations
 
@@ -31,7 +30,6 @@ __email__ = "jmmshn@gmail.com"
 
 
 class RelaxJobSummary(NamedTuple):
-    """A summary of a relaxation job."""
 
     structure: Structure
     entry: ComputedEntry
@@ -90,7 +88,6 @@ def get_stable_inserted_results(
         or (n_inserted > n_steps)
     ):
         return []
-    # append job name
     _shown_steps = str(n_steps) if n_steps else "inf"
     add_name = f"{n_inserted}/{_shown_steps}"
 
@@ -155,17 +152,14 @@ def get_computed_entries(
     """
     if single is None:
         return multi
-    # keep the [1] for now, if jobflow supports NamedTuple, we can do this much cleaner
     s_ = RelaxJobSummary._make(single)
 
-    # Ensure that the entry_id is an acceptable MPID
     try:
         entry_id = MPID(s_.uuid)
     except ValueError:
         entry_id = ULID()
     s_.entry.entry_id = str(entry_id)
 
-    # Store UUID for provenance
     s_.entry.data["UUID"] = s_.uuid
 
     ent = ComputedStructureEntry(
@@ -197,8 +191,6 @@ def get_insertion_electrode_doc(
     """Return a `InsertionElectrodeDoc`."""
     for ient in computed_entries:
         if AlphaID and check_ulid.fullmatch(ient.entry_id):
-            # AlphaID not compatible with ULID, MPID is but ID validation
-            # does not permit ULIDs, just their integer values.
             ient.data["material_id"] = AlphaID(int(ULID.from_str(ient.entry_id)))
         else:
             ient.data["material_id"] = ient.entry_id
@@ -290,8 +282,6 @@ def get_min_energy_summary(
     -------
         The structure with the lowest energy.
     """
-    # Since the outputs parser will see a NamedTuple and immediately convert it to
-    # a list We have to convert the list of lists to a list of NamedTuples
     relaxed_summaries = list(map(RelaxJobSummary._make, relaxed_summaries))
     topotactic_summaries = [
         summary

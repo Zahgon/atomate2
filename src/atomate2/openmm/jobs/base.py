@@ -1,4 +1,3 @@
-"""The base class for OpenMM simulation makers."""
 
 from __future__ import annotations
 
@@ -40,7 +39,6 @@ if TYPE_CHECKING:
 
 
 try:
-    # so we can load OpenMM Interchange created by openmmml
     import openmmml
 except ImportError:
     openmmml = None
@@ -50,7 +48,6 @@ try:
 except ImportError:
 
     class Interchange:  # type: ignore[no-redef]
-        """Dummy class for failed imports of Interchange."""
 
         def model_validate(self, _: str) -> None:
             """Parse raw is the first method called on the Interchange object."""
@@ -117,60 +114,6 @@ def openmm_job(method: Callable) -> job:
 @due.dcite(Doi("10.1021/acs.jpcb.3c06662"), description="OpenMM 8")
 @dataclass
 class BaseOpenMMMaker(Maker):
-    """Base class for OpenMM simulation makers.
-
-    This class provides a foundation for creating OpenMM simulation
-    makers. It includes common attributes and methods for setting up,
-    running, and closing OpenMM simulations. Subclasses can override
-    the run_openmm method to define specific simulation logic.
-
-    In general, any missing values will be taken from the
-    previous task, if possible, and the default values defined in
-    atomate2.openmm.OPENMM_MAKER_DEFAULTS, if not.
-
-    Attributes
-    ----------
-    name : str
-        The name of the OpenMM job.
-    tags : Optional[List[str]]
-        Tags for the OpenMM job.
-    n_steps : Optional[int]
-        The number of simulation steps to run.
-    step_size : Optional[float]
-        The size of each simulation step (picoseconds).
-    temperature : Optional[float]
-        The simulation temperature (kelvin).
-    friction_coefficient : Optional[float]
-        The friction coefficient for the
-        integrator (inverse picoseconds).
-    platform_name : Optional[str]
-        The name of the OpenMM platform to use, passed to
-        Interchange.to_openmm_simulation.
-    platform_properties : Optional[dict]
-        Properties for the OpenMM platform,
-        passed to Interchange.to_openmm_simulation.
-    state_interval : Optional[int]
-        The interval for saving simulation state.
-        To record no state, set to 0.
-    state_file_name : Optional[str]
-        The name of the state file to save.
-    traj_interval : Optional[int]
-        The interval for saving trajectory frames. To record
-        no trajectory, set to 0.
-    wrap_traj : Optional[bool]
-        Whether to wrap trajectory coordinates.
-    report_velocities : Optional[bool]
-        Whether to report velocities in the trajectory file.
-    traj_file_name : Optional[str]
-        The name of the trajectory file to save.
-    traj_file_type : Optional[str]
-        The type of trajectory file to save. Supports any output format
-        supported by MDAnalysis.
-    embed_traj : Optional[bool]
-        Whether to embed the trajectory in the task document.
-    save_structure : Optional[bool]
-        Whether to save the final structure in the task document.
-    """
 
     name: str = "base openmm job"
     tags: list[str] | None = field(default=None)
@@ -229,7 +172,6 @@ class BaseOpenMMMaker(Maker):
 
         self._add_reporters(sim, dir_name, prev_task)
 
-        # Run the simulation
         start = time.time()
         self.run_openmm(sim, dir_name)
         elapsed_time = time.time() - start
@@ -238,7 +180,6 @@ class BaseOpenMMMaker(Maker):
 
         structure = self._create_structure(sim, prev_task)
 
-        # leaving the MDAReporter makes the builders fail
         for _ in range(len(sim.reporters)):
             reporter = sim.reporters.pop()
             if hasattr(reporter, "save"):
@@ -250,7 +191,6 @@ class BaseOpenMMMaker(Maker):
             interchange, structure, elapsed_time, dir_name, prev_task
         )
 
-        # write out task_doc json to output dir
         with open(dir_name / "taskdoc.json", "w") as file:
             json.dump(task_doc.model_dump(), file, cls=MontyEncoder)
 
@@ -279,7 +219,6 @@ class BaseOpenMMMaker(Maker):
             try:
                 interchange = Interchange.parse_raw(interchange)
             except:  # noqa: E722
-                # parse with openmm instead
                 interchange = OpenMMInterchange.model_validate_json(interchange)
         else:
             interchange = copy.deepcopy(interchange)
@@ -306,7 +245,6 @@ class BaseOpenMMMaker(Maker):
             The previous task document.
         """
         has_steps = self._resolve_attr("n_steps", prev_task) > 0
-        # add trajectory reporter
         traj_interval = self._resolve_attr("traj_interval", prev_task)
         traj_file_name = self._resolve_attr("traj_file_name", prev_task)
         traj_file_type = self._resolve_attr("traj_file_type", prev_task)
@@ -315,7 +253,6 @@ class BaseOpenMMMaker(Maker):
 
         if has_steps & (traj_interval > 0):
             writer_kwargs = {}
-            # these are the only file types that support velocities
             if traj_file_type in ("h5md", "nc", "ncdf", "json"):
                 writer_kwargs["velocities"] = report_velocities
                 writer_kwargs["forces"] = False
@@ -325,8 +262,6 @@ class BaseOpenMMMaker(Maker):
             if traj_file.exists() and task_reports(prev_task, "traj"):
                 self.traj_file_name = increment_name(traj_file_name)
 
-            # TODO: MDA 2.7.0 has a bug that prevents velocity reporting
-            #  this is a stop gap measure before MDA 2.8.0 is released
             kwargs = dict(
                 file=str(dir_name / f"{self.traj_file_name}.{traj_file_type}"),
                 reportInterval=traj_interval,
@@ -336,7 +271,6 @@ class BaseOpenMMMaker(Maker):
                 traj_reporter = PymatgenTrajectoryReporter(**kwargs)
             else:
                 if report_velocities:
-                    # assert package version
                     warnings.warn(
                         "Reporting velocities is only supported with the"
                         "development version of MDAnalysis, >= 2.8.0, "
@@ -357,7 +291,6 @@ class BaseOpenMMMaker(Maker):
 
             sim.reporters.append(traj_reporter)
 
-        # add state reporter
         state_interval = self._resolve_attr("state_interval", prev_task)
         state_file_name = self._resolve_attr("state_file_name", prev_task)
         if has_steps & (state_interval > 0):
@@ -430,7 +363,6 @@ class BaseOpenMMMaker(Maker):
         """
         prev_task = prev_task or OpenMMTaskDocument()
 
-        # retrieve previous CalculationInput through multiple Optional fields
         if prev_task.calcs_reversed:
             prev_input = prev_task.calcs_reversed[0].input
         else:

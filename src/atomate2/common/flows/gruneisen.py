@@ -1,4 +1,3 @@
-"""Flows for calculating Grueneisen-Parameters."""
 
 from __future__ import annotations
 
@@ -29,55 +28,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class BaseGruneisenMaker(Maker, ABC):
-    """
-    Maker to calculate Grueneisen parameters with DFT/force field code and Phonopy.
-
-    Calculate Grueneisen parameters by a finite volume change approach based on
-    harmonic phonons.
-    Initially, a tight structural relaxation is performed to obtain a structure without
-    forces on the atoms. The optimized structure (ground state) is further expanded and
-    shrunk by 1 % of its volume. Subsequently, supercells with one displaced atom are
-    generated for all the three structures (ground state, expanded and shrunk volume)
-    and accurate forces are computed for these structures. With the help of phonopy,
-    these forces are then converted into a dynamical matrix. This dynamical matrix of
-    three structures is then used as an input for the phonopy Grueneisen API
-    to compute Grueneisen parameters.
-
-
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    bulk_relax_maker: .ForceFieldRelaxMaker, .BaseAimsMaker, .BaseVaspMaker, or None
-        A maker to perform an initial tight relaxation on the bulk.
-    code: str
-        determines the DFT or force field code.
-    const_vol_relax_maker: .ForceFieldRelaxMaker, .BaseAimsMaker,
-        .BaseVaspMaker, or None. A maker to perform a tight relaxation
-        on the expanded and shrunk structures at constant volume.
-    kpath_scheme: str
-        scheme to generate kpoints. Please be aware that
-        you can only use seekpath with any kind of cell
-        Otherwise, please use the standard primitive structure
-        Available schemes are:
-        "seekpath", "hinuma", "setyawan_curtarolo", "latimer_munro".
-        "seekpath" and "hinuma" are the same definition but
-        seekpath can be used with any kind of unit cell as
-        it relies on phonopy to handle the relationship
-        to the primitive cell and not pymatgen
-    mesh: tuple or float
-        Mesh numbers along a, b, c axes used for Grueneisen parameter computation.
-        Or an int or float to indicate a kpoint density.
-    phonon_maker: .BasePhononMaker
-        PhononMaker to run the phonon workflow.
-    perc_vol: float
-        Percent volume to shrink and expand ground state structure
-    compute_gruneisen_param_kwargs: dict
-        Keyword arguments passed to :obj:`compute_gruneisen_param`.
-    symprec: float
-        Symmetry precision for symmetry checks and phonon runs.
-    """
 
     name: str = "Gruneisen"
     bulk_relax_maker: ForceFieldRelaxMaker | BaseVaspMaker | BaseAimsMaker | None = None
@@ -109,7 +59,6 @@ class BaseGruneisenMaker(Maker, ABC):
         """
         jobs = []  # initialize an empty list for jobs to be run
 
-        # initialize an dict to store optimized structures
         opt_struct = dict.fromkeys(("ground", "plus", "minus"), None)
         prev_dir_dict = dict.fromkeys(("ground", "plus", "minus"), None)
         if (
@@ -127,7 +76,6 @@ class BaseGruneisenMaker(Maker, ABC):
             opt_struct["ground"] = structure
             prev_dir_dict["ground"] = prev_dir
 
-        # Add job to get expanded and shrunk volume structures
         struct_dict = shrink_expand_structure(
             structure=bulk.output.structure, perc_vol=self.perc_vol
         )
@@ -136,24 +84,20 @@ class BaseGruneisenMaker(Maker, ABC):
         if self.prev_calc_dir_argname is not None:
             const_vol_relax_maker_kwargs[self.prev_calc_dir_argname] = prev_dir
 
-        # get expanded structure
         const_vol_struct_plus = self.const_vol_relax_maker.make(
             structure=struct_dict.output["plus"], **const_vol_relax_maker_kwargs
         )
         const_vol_struct_plus.append_name(" plus")
-        # add relax job at constant volume for expanded structure
         jobs.append(const_vol_struct_plus)
 
         opt_struct["plus"] = (
             const_vol_struct_plus.output.structure
         )  # store opt struct of expanded volume
 
-        # get shrunk structure
         const_vol_struct_minus = self.const_vol_relax_maker.make(
             structure=struct_dict.output["minus"], **const_vol_relax_maker_kwargs
         )
         const_vol_struct_minus.append_name(" minus")
-        # add relax job at constant volume for shrunk structure
         jobs.append(const_vol_struct_minus)
 
         opt_struct["minus"] = (
@@ -161,7 +105,6 @@ class BaseGruneisenMaker(Maker, ABC):
         )  # store opt struct of expanded volume
         prev_dir_dict["plus"] = const_vol_struct_plus.output.dir_name
         prev_dir_dict["minus"] = const_vol_struct_minus.output.dir_name
-        # go over a dict of prev_dir and use it in the maker
         phonon_jobs = run_phonon_jobs(
             opt_struct,
             self.phonon_maker,
@@ -170,9 +113,7 @@ class BaseGruneisenMaker(Maker, ABC):
             prev_dir_dict=prev_dir_dict,
         )
         jobs.append(phonon_jobs)
-        # might not work well, put this into a job
 
-        # get Gruneisen parameter from phonon runs yaml with phonopy api
         get_gru = compute_gruneisen_param(
             code=self.code,
             kpath_scheme=self.kpath_scheme,

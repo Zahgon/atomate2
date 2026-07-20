@@ -1,4 +1,3 @@
-"""Functions for manipulating QChem files."""
 
 from __future__ import annotations
 
@@ -54,7 +53,6 @@ def copy_qchem_outputs(
     opt_ext = get_largest_opt_extension(src_dir, src_host, file_client=file_client)
     directory_listing = file_client.listdir(src_dir, host=src_host)
 
-    # find required files
     files = ("mol.qin", "mol.qout", *tuple(additional_qchem_files))
     required_files = [get_zfile(directory_listing, r + opt_ext) for r in files]
 
@@ -71,7 +69,6 @@ def copy_qchem_outputs(
         file_client=file_client,
     )
 
-    # rename files to remove opt extension
     if opt_ext:
         all_files = required_files
         files_to_rename = {

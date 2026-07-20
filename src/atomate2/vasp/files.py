@@ -1,4 +1,3 @@
-"""Functions for manipulating VASP files."""
 
 from __future__ import annotations
 
@@ -69,19 +68,15 @@ def copy_vasp_outputs(
     relax_ext = get_largest_relax_extension(src_dir, src_host, file_client=file_client)
     directory_listing = file_client.listdir(src_dir, host=src_host)
 
-    # find required files
     files = ("INCAR", "OUTCAR", "CONTCAR", "vasprun.xml", *additional_vasp_files)
     required_files = [get_zfile(directory_listing, r + relax_ext) for r in files]
 
-    # find optional files; do not fail if KPOINTS is missing, this might be KSPACING
-    # note: POTCAR files never have the relax extension, whereas KPOINTS files should
     optional_files = []
     for file in ("POTCAR", "POTCAR.spec", "KPOINTS" + relax_ext):
         found_file = get_zfile(directory_listing, file, allow_missing=True)
         if found_file is not None:
             optional_files.append(found_file)
 
-    # check at least one type of POTCAR file is included
     if len([f for f in optional_files if "POTCAR" in f.name]) == 0:
         raise FileNotFoundError(f"Could not find a POTCAR file in {src_dir!r} to copy")
 
@@ -99,7 +94,6 @@ def copy_vasp_outputs(
         force=force_overwrite,
     )
 
-    # rename files to remove relax extension
     if relax_ext:
         all_files = optional_files + required_files
         files_to_rename = {
@@ -194,7 +188,6 @@ def write_vasp_input_set(
         vis.incar.update(SETTINGS.VASP_INCAR_UPDATES)
 
     if clean_prev:
-        # remove previous inputs (prevents old KPOINTS file from overriding KSPACING)
         for filename in ("POSCAR", "KPOINTS", "POTCAR", "POTCAR.spec", "INCAR"):
             if Path(filename).exists():
                 Path(filename).unlink()

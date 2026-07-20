@@ -1,4 +1,3 @@
-"""Utils for using a force field (aka an interatomic potential)."""
 
 from __future__ import annotations
 
@@ -34,7 +33,6 @@ _FORCEFIELD_DATA_OBJECTS = ["trajectory", "ionic_steps"]
 
 
 class MLFF(Enum):  # TODO inherit from StrEnum when 3.11+
-    """Names of ML force fields."""
 
     MACE = "MACE"  # This is MACE-MP-0 (medium), deprecated
     MACE_MP_0 = "MACE-MP-0"
@@ -57,13 +55,7 @@ class MLFF(Enum):  # TODO inherit from StrEnum when 3.11+
 
     @classmethod
     def _missing_(cls, value: Any) -> Any:
-        """Allow input of str(MLFF) as valid enum."""
-        if isinstance(value, str):
-            value = value.split("MLFF.")[-1]
-        for member in cls:
-            if member.name == value:
-                return member
-        return None
+        pass
 
 
 _DEFAULT_CALCULATOR_KWARGS: dict[MLFF, Any] = {
@@ -111,7 +103,6 @@ def _get_standardized_mlff(force_field_name: str | MLFF) -> MLFF:
     MLFF: the name of the forcefield
     """
     if isinstance(force_field_name, str):
-        # ensure `force_field_name` uses enum format
         if force_field_name.startswith("MLFF."):
             force_field_name = force_field_name.split("MLFF.")[-1]
 
@@ -157,11 +148,6 @@ def _get_formatted_ff_name(force_field_name: str | MLFF) -> str:
 
 @dataclass
 class ForceFieldMixin:
-    """Mix-in class for force-fields.
-
-    All basic forcefield jobs should inherit from this class
-    to easily access `ase_calculator`.
-    """
 
     force_field_name: str | MLFF | dict = MLFF.Forcefield
     calculator_meta: str | MLFF | dict | None = None
@@ -207,20 +193,15 @@ class ForceFieldMixin:
             or isinstance(self.force_field_name, Calculator)
             or inspect.isfunction(self.force_field_name)  # for mace_mp specifically
         ):
-            # can happen with deserialization of legacy documents from JSON
             calculator_meta = ".".join(
                 getattr(self.force_field_name, k) for k in ("__module__", "__name__")
             )
 
         else:
             mlff = _get_standardized_mlff(self.force_field_name)
-            # On round-trip deserialization, `calculator_meta` will be a dict
-            # of the calculator information
             calculator_meta = self.calculator_meta or mlff
 
-        # avoids unintentional deserialization from monty on round-trip
         if isinstance(calculator_meta, dict):
-            # Should always be @callable but being safe here to be sure
             cls_key = next(k for k in ("@callable", "@class") if k in calculator_meta)
             self.calculator_meta: str | MLFF = ".".join(
                 calculator_meta[k] for k in ("@module", cls_key)
@@ -233,7 +214,6 @@ class ForceFieldMixin:
 
         self.force_field_name: str = str(mlff)  # Narrow-down type for mypy
 
-        # Pad calculator_kwargs with default values, but permit user to override them
         self.calculator_kwargs: dict[str, Any] = {
             **_DEFAULT_CALCULATOR_KWARGS.get(mlff, {}),
             **self.calculator_kwargs,
@@ -251,26 +231,15 @@ class ForceFieldMixin:
             return self.run_ase(*args, **kwargs)
 
     def _get_calculator(self) -> Calculator:
-        """ASE calculator, can be overwritten by user."""
-        return ase_calculator(
-            self.calculator_meta,
-            **self.calculator_kwargs,
-        )
+        pass
 
     @property
     def mlff(self) -> MLFF:
-        """The MLFF enum corresponding to the force field name."""
-        return MLFF(str(self.force_field_name).split("MLFF.")[-1])
+        pass
 
     @cached_property
     def ase_calculator_name(self) -> str:
-        """The name of the ASE calculator for schemas."""
-        if isinstance(self.calculator_meta, MLFF):
-            return str(self.force_field_name)
-        if isinstance(self.calculator_meta, str | dict):
-            calc_cls = _load_calc_cls(self.calculator_meta)
-            return calc_cls.__name__
-        assert_never(self.calculator_meta)
+        pass
 
 
 def ase_calculator(
@@ -312,7 +281,6 @@ def ase_calculator(
         calculator_name = MLFF(calculator_meta)
 
         match calculator_name:
-            # Simple APIs
             case (
                 MLFF.DeepMD
                 | MLFF.GAP
@@ -334,7 +302,6 @@ def ase_calculator(
 
             case MLFF.CHGNet | MLFF.M3GNet | MLFF.MATPES_R2SCAN | MLFF.MATPES_PBE:
                 if calculator_name == MLFF.CHGNet:
-                    # Legacy interface to `chgnet` package
                     try:
                         from chgnet.model.dynamics import CHGNetCalculator
 
@@ -354,13 +321,6 @@ def ase_calculator(
                 import matgl
                 from matgl.ext.ase import PESCalculator
 
-                # matgl >= 4.0 removed the DGL backend; matgl now targets
-                # PyTorch Geometric exclusively and all potentials load through
-                # the single ``matgl.ext.ase.PESCalculator``. Pre-trained weights
-                # use the ``<Architecture>-PES-<Dataset>-<Func>-<Version>`` naming
-                # and live on the ``materialyze`` HF org (resolved from bare names
-                # by ``load_model``), except the CHGNet PyG weights, hosted under
-                # ``BowenD-UCB``. See https://huggingface.co/materialyze.
                 match calculator_name:
                     case MLFF.M3GNet:
                         path = kwargs.get("path", "M3GNet-PES-MatPES-PBE-2025.2")
@@ -369,8 +329,6 @@ def ase_calculator(
                             "path", "BowenD-UCB/CHGNet-PyG-MatPES-PBE-2025.2.10"
                         )
                     case MLFF.MATPES_R2SCAN | MLFF.MATPES_PBE:
-                        # ``calculator_name.value`` is e.g. "MatPES-PBE";
-                        # take the suffix to construct the HF repo name.
                         functional = calculator_name.value.split("-", 1)[-1]
                         architecture = kwargs.pop("architecture", "TensorNet")
                         version = kwargs.pop("version", "2025.2")
@@ -400,9 +358,6 @@ def ase_calculator(
                     )
 
                     if kwargs.get("dispersion", False):
-                        # See https://github.com/materialsproject/atomate2/issues/1262
-                        # Specifying an explicit model path unsets the dispersio
-                        # Reset it here.
                         import torch
                         from ase.calculators.mixing import SumCalculator
                         from torch_dftd.torch_dftd3_calculator import (
@@ -518,12 +473,10 @@ def _get_pkg_name(calculator_meta: MLFF | str | dict[str, Any]) -> str | None:
         None otherwise.
     """
     if isinstance(calculator_meta, MLFF):
-        # map force field name to its package name
         match calculator_meta:
             case MLFF.Allegro | MLFF.Nequip:
                 ff_pkg = "nequip"
             case MLFF.CHGNet:
-                # Check if CHGNet is installed
                 try:
                     ff_pkg = next(pkg for pkg in ("chgnet", "matgl") if find_spec(pkg))
                 except StopIteration:

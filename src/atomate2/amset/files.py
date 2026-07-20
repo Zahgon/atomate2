@@ -1,4 +1,3 @@
-"""Module defining functions for manipulating amset files."""
 
 from __future__ import annotations
 
@@ -47,7 +46,6 @@ def copy_amset_files(
     logger.info(f"Copying AMSET inputs from {src_dir}")
     directory_listing = file_client.listdir(src_dir, host=src_host)
 
-    # find optional files
     files = []
     for file in (
         "settings.yaml",

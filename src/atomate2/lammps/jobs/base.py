@@ -1,4 +1,3 @@
-"""Base job maker for LAMMPS calculations."""
 
 import glob
 import os
@@ -32,7 +31,6 @@ __all__ = ("BaseLammpsMaker", "lammps_job")
 
 
 class LammpsRunError(Exception):
-    """Custom exception for LAMMPS jobs."""
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
@@ -40,29 +38,11 @@ class LammpsRunError(Exception):
 
 
 def lammps_job(method: Callable) -> job:
-    """Job decorator for LAMMPS jobs."""
-    return job(method, data=_DATA_OBJECTS, output_schema=LammpsTaskDocument)
+    pass
 
 
 @dataclass
 class BaseLammpsMaker(Maker):
-    """
-    Basic Maker class for LAMMPS jobs.
-
-    name: str
-        Name of the job
-    input_set_generator: BaseLammpsGenerator
-        Input set generator for the job, default is the BaseLammpsSetGenerator.
-        Check the sets module for more options on input kwargs.
-    write_input_set_kwargs: dict
-        Additional kwargs to write_lammps_input_set
-    run_lammps_kwargs: dict
-        Additional kwargs to run_lammps
-    task_document_kwargs: dict
-        Additional kwargs to TaskDocument.from_directory
-    write_additional_data: dict
-        Additional data to write to the job directory
-    """
 
     name: str = "Base LAMMPS job"
     input_set_generator: BaseLammpsSetGenerator = field(
@@ -144,7 +124,6 @@ class BaseLammpsMaker(Maker):
                 error = "could not parse log file"
             raise LammpsRunError(f"Task {task_doc.task_label} failed, error: {error}")
 
-        # TODO: Only gzip LAMMPS files, not job scheduler related files
         gzip_files(".")
 
         return Response(output=task_doc)

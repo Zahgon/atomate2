@@ -1,4 +1,3 @@
-"""Jobs used for enumeration/calculation of collinear magnetic orderings."""
 
 from __future__ import annotations
 

@@ -1,4 +1,3 @@
-"""Jobs for performing electron phonon calculations in VASP."""
 
 from __future__ import annotations
 
@@ -29,53 +28,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SupercellElectronPhononDisplacedStructureMaker(TransmuterMaker):
-    """
-    Maker to run electron phonon VASP jobs to generate displaced structures.
-
-    This job:
-
-    1. Generates a close to cubic supercell with cell lengths > 15 Å.
-    2. Performs an IBRION = 6 finite-displacement calculation to calculate the phonon
-       eigenvalues and eigenvectors.
-    3. Displaces the atoms to simulate a range of temperatures.
-
-    .. warning::
-        Electron phonon properties should be converged with respect to supercell size.
-        Typically, cells with all lattice vectors greater than 15 Å should be a
-        reasonable starting point.
-
-    .. note::
-        The input structure should be well relaxed to avoid imaginary modes. For
-        example, using :obj:`TightRelaxMaker`.
-
-    .. note::
-        Requires VASP 6.0 and higher. See https://www.vasp.at/wiki/index.php/Electron-
-        phonon_interactions_from_Monte-Carlo_sampling
-        for more details.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .VaspInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_vasp_input_set`.
-    copy_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_vasp_outputs`.
-    run_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_vasp`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "supercell electron phonon displacements"
     input_set_generator: ElectronPhononSetGenerator = field(
@@ -104,10 +56,8 @@ class SupercellElectronPhononDisplacedStructureMaker(TransmuterMaker):
         dim = self.min_supercell_length / np.array(structure.lattice.abc)
         scaling_matrix = np.diag(np.ceil(dim).astype(int)).tolist()
         if self.transformation_params is None:
-            # only overwrite transformation params if it is not set
             self.transformation_params = ({"scaling_matrix": scaling_matrix},)
 
-        # update temperatures
         self.input_set_generator.temperatures = self.temperatures
 
         return super().make.original(self, structure, prev_dir)
@@ -156,14 +106,9 @@ def run_elph_displacements(
         "dirs": [],
     }
     for temp, structure in zip(temperatures, structures, strict=True):
-        # create the job
         elph_job = vasp_maker.make(structure, prev_dir=prev_dir)
         elph_job.append_name(f" T={temp}")
 
-        # write details of the electron phonon temperature and structure elph_info.json
-        # file. this file will automatically get added to the task document and allow
-        # the elph builder to reconstruct the elph document. note the ":" is
-        # automatically converted to a "." in the filename.
         info = {
             "temperature": temp,
             "original_structure": original_structure,
@@ -175,7 +120,6 @@ def run_elph_displacements(
 
         jobs.append(elph_job)
 
-        # extract the outputs we want
         outputs["temperatures"].append(temp)
         outputs["band_structures"].append(elph_job.output.vasp_objects["bandstructure"])
         outputs["structures"].append(elph_job.output.structure)
@@ -241,12 +185,10 @@ def calculate_electron_phonon_renormalisation(
             "calculate electron-phonon renormalisation."
         )
 
-    # filter band structures that are None (i.e., the displacement calculation failed)
     keep = [idx for idx, b in enumerate(displacement_band_structures) if b is not None]
     temperatures = [temperatures[i] for i in keep]
 
     if SETTINGS.VASP_USE_EMMET_MODELS:
-        # Convert back to pymatgen band structures
         displacement_band_structures = [
             ElectronicBS(**displacement_band_structures[i]).to_pmg() for i in keep
         ]

@@ -1,4 +1,3 @@
-"""(Work)flows for FHI-aims."""
 
 from __future__ import annotations
 
@@ -21,20 +20,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class DoubleRelaxMaker(Maker):
-    """Double relaxation maker for FHI-aims.
-
-    A maker to perform a double relaxation in FHI-aims (first with light,
-    and then with tight species_defaults).
-
-    Parameters
-    ----------
-    name : str
-        A name for the flow
-    relax_maker1: .BaseAimsMaker
-        A maker that generates the first relaxation
-    relax_maker2: .BaseAimsMaker
-        A maker that generates the second relaxation
-    """
 
     name: str = "Double relaxation"
     relax_maker1: BaseAimsMaker = field(default_factory=RelaxMaker)
@@ -83,7 +68,6 @@ class DoubleRelaxMaker(Maker):
             paths for species defaults to use relative to the given `species_dir`
             in parameters
         """
-        # various checks
         if len(species_defaults) != 2:
             raise ValueError(
                 "Two species defaults directories must be provided for DoubleRelaxFlow"
@@ -98,7 +82,6 @@ class DoubleRelaxMaker(Maker):
                     f"The species defaults directory {basis_set_dir} does not exist"
                 )
 
-        # now the actual work begins
         makers = []
         for basis_set in species_defaults:
             parameters["species_dir"] = (species_dir / basis_set).as_posix()

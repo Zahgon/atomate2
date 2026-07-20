@@ -1,4 +1,3 @@
-"""Flow for calculating surface adsorption energies."""
 
 from __future__ import annotations
 
@@ -27,42 +26,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class AdsorptionMaker(Maker):
-    """
-    Workflow that calculates the adsorption energy of a molecule on a surface.
-
-    The flow consists of the following steps:
-    1. Optimize the molecule structure and calculate its static energy.
-    2. Optimize the bulk structure.
-    3. Generate a slab structure using the optimized bulk structure and calculate its static energy.
-    4. Generate adsorption sites on the slab and calculate corresponding static energy.
-    5. Calculate the adsorption energy by calculating the energy difference between the slab with
-    adsorbed molecule and the sum of the slab without the adsorbed molecule and the molecule.
-
-    Parameters
-    ----------
-    name: str
-        Name of the flow.
-    bulk_relax_maker: BaseVaspMaker
-        Maker for bulk relaxation.
-    mol_relax_maker: BaseVaspMaker
-        Maker for molecule relaxation.
-    slab_relax_maker: BaseVaspMaker
-        Maker for slab relaxation with adsorption.
-    slab_static_maker: BaseVaspMaker
-        Maker for slab static energy calculation.
-    mol_static_maker: BaseVaspMaker
-        Maker for molecule static energy calculation.
-    min_vacuum: float
-        The minimum size of the vacuum region. In Angstroms or number of hkl planes.
-    min_slab_size: float
-        The minimum size of layers of the slab. In Angstroms or number of hkl planes.
-    min_lw: float
-        Minimum length and width of the slab
-    surface_idx: tuple of int
-        Miller index [h, k, l] of plane parallel to surface.
-    mol_box_size: tuple of float
-        Box size to use in calculating the molecule energetics in PBC.
-    """  # noqa: E501
 
     name: str = "adsorption workflow"
     mol_relax_maker: Maker | None = field(default_factory=MolRelaxMaker)
@@ -155,7 +118,6 @@ class AdsorptionMaker(Maker):
         jobs += [generate_adslabs_structures]
         adslab_structures = generate_adslabs_structures.output
 
-        # slab relaxation without adsorption
         slab_optimize_job = self.slab_relax_maker.make(slab_structure, prev_dir=None)
         slab_optimize_job.append_name("slab_relax_job")
         jobs += [slab_optimize_job]

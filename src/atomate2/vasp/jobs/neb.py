@@ -1,4 +1,3 @@
-"""Define NEB VASP jobs."""
 
 from __future__ import annotations
 
@@ -39,27 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 def vasp_neb_job(method: Callable) -> job:
-    """
-    Decorate the ``make`` method of VASP NEB job makers.
-
-    This is a thin wrapper around :obj:`~jobflow.core.job.Job` that configures common
-    settings for VASP NEB jobs. For example, it ensures that large data objects
-    (band structures, density of states, LOCPOT, CHGCAR, etc) are all stored in the
-    atomate2 data store. It also configures the output schema to be a VASP
-    :obj:`.NebTaskDoc`.
-
-    Parameters
-    ----------
-    method : callable
-        A BaseVaspMaker.make method. This should not be specified directly and is
-        implied by the decorator.
-
-    Returns
-    -------
-    callable
-        A decorated version of the make function that will generate VASP NEB jobs.
-    """
-    return job(method, data=_DATA_OBJECTS, schema=NebIntermediateImagesDoc)
+    pass
 
 
 @job
@@ -78,54 +57,6 @@ def collect_neb_output(
 
 @dataclass
 class NebFromImagesMaker(BaseVaspMaker):
-    """
-    Maker to create VASP NEB jobs from a set of images.
-
-    Note on KPOINTS / VASP 6:
-    --------------------------
-    There's a bug in VASP 6 compiled with HDF5 support:
-        https://www.vasp.at/forum/viewtopic.php?f=3&t=18721&p=23430&hilit=neb+hdf5+images#p23430
-
-    VASP performs a validation check of whether the KPOINTS file
-    used in the "head" directory (which contains 00, 01, ..., 0N
-    subdirectories) is the same as in each image subdirectory.
-
-    If KSPACING is used, this check isn't performed.
-    However, a "kludge" to get around this issue is to simply
-    copy the KPOINTS file used in the head directory
-    to each image directory.
-
-    Parameters
-    ----------
-    kpoints_kludge: Kpoints or bool. Default is True.
-        See "Note on KPOINTS / VASP 6" above.
-        If True (default), the job checks for the
-        existence of a KPOINTS file and copies it (if it exists)
-        to each image subdirectory.
-        The user can override this with a Kpoints object of their choice.
-        If kpoints_kludge is set to False, the KPOINTS file will not be
-        copied to each image.
-    name : str
-        The job name.
-    input_set_generator : .VaspInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_vasp_input_set`.
-    copy_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_vasp_outputs`.
-    run_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_vasp`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "NEB"
     input_set_generator: VaspInputGenerator = field(default_factory=NebSetGenerator)
@@ -161,14 +92,12 @@ class NebFromImagesMaker(BaseVaspMaker):
         num_images = num_frames - 2
         self.input_set_generator.num_images = num_images
 
-        # copy previous inputs
         from_prev = prev_dir is not None
         if prev_dir is not None:
             copy_vasp_outputs(prev_dir, **self.copy_vasp_kwargs)
 
         self.write_input_set_kwargs.setdefault("from_prev", from_prev)
 
-        # write vasp input files
         write_vasp_input_set(
             images[0], self.input_set_generator, **self.write_input_set_kwargs
         )
@@ -189,23 +118,18 @@ class NebFromImagesMaker(BaseVaspMaker):
             if isinstance(self.kpoints_kludge, Kpoints):
                 self.kpoints_kludge.write_file(f"{image_dir}/KPOINTS")
 
-        # write any additional data
         for filename, data in self.write_additional_data.items():
             dumpfn(data, filename.replace(":", "."))
 
-        # run vasp
         run_vasp(**self.run_vasp_kwargs)
 
-        # parse vasp outputs
         task_doc = get_vasp_task_document(
             Path.cwd(), is_neb=True, **self.task_document_kwargs
         )
         task_doc.task_label = self.name
 
-        # decide whether child jobs should proceed
         stop_children = should_stop_children(task_doc, **self.stop_children_kwargs)
 
-        # gzip folder
         gzip_output_folder(
             directory=Path.cwd(),
             setting=SETTINGS.VASP_ZIP_FILES,
@@ -228,20 +152,6 @@ class NebFromImagesMaker(BaseVaspMaker):
 
 @dataclass
 class NebFromEndpointsMaker(Maker):
-    """Maker to create VASP NEB jobs from two endpoints.
-
-    Optionally relax the two endpoints and return a full NEB hop analysis.
-    If a maker to relax the endpoints is not specified, this job
-    interpolates the provided endpoints and performs an NEB on the
-    interpolated images, returning an NebTaskDoc.
-
-    Parameters
-    ----------
-    endpoint_relax_maker : BaseVaspMaker or None (default)
-        Optional maker to initially relax the endpoints.
-    images_maker : NebFromImagesMaker
-        Required maker to perform NEB on interpolated images.
-    """
 
     endpoint_relax_maker: BaseVaspMaker | None = None
     images_maker: NebFromImagesMaker = field(default_factory=NebFromImagesMaker)

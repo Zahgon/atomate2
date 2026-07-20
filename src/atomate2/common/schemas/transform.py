@@ -1,4 +1,3 @@
-"""Define schemas for SQS runs."""
 
 from emmet.core.types.enums import ValueEnum
 from pydantic import BaseModel, Field
@@ -7,7 +6,6 @@ from pymatgen.transformations.transformation_abc import AbstractTransformation
 
 
 class SQSMethod(ValueEnum):
-    """Define possible SQS methods used."""
 
     MCSQS = "mcsqs"
     ICET_ENUM = "icet-enumeration"
@@ -15,7 +13,6 @@ class SQSMethod(ValueEnum):
 
 
 class TransformTask(BaseModel):
-    """Schematize a transformation run."""
 
     transformation: AbstractTransformation = Field(
         description="The transformation applied to a structure."
@@ -31,7 +28,6 @@ class TransformTask(BaseModel):
 
 
 class SQSTask(TransformTask):
-    """Structure the output of SQS runs."""
 
     sqs_method: SQSMethod | None = Field(None, description="The SQS protocol used.")
     final_objective: float | None = Field(
@@ -61,5 +57,4 @@ class SQSTask(TransformTask):
 
     @property
     def all_structures(self) -> list[Structure]:
-        """Return all structures, not just the most optimal SQS structure."""
-        return [self.final_structure, *(self.sqs_structures or [])]
+        pass

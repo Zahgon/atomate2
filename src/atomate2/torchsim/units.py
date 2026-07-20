@@ -1,4 +1,3 @@
-"""Define the Units for TorchSim calculations."""
 
 EV = 1.602176634e-19  # [J] CODATA 2002
 AMU = 1.66053906660e-27  # [kg] CODATA 2002

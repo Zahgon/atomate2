@@ -1,4 +1,3 @@
-"""Schemas for TorchSim tasks."""
 
 from __future__ import annotations
 
@@ -18,7 +17,6 @@ if TYPE_CHECKING:
 
 
 class TorchSimModelType(StrEnum):  # type: ignore[attr-defined]
-    """Enum for model types."""
 
     FAIRCHEM = "FairChemModel"
     MACE = "MaceModel"
@@ -31,7 +29,6 @@ class TorchSimModelType(StrEnum):  # type: ignore[attr-defined]
 
 
 class ConvergenceFn(StrEnum):  # type: ignore[attr-defined]
-    """Enum for convergence function types."""
 
     ENERGY = "energy"
     FORCE = "force"
@@ -44,14 +41,6 @@ CONVERGENCE_FN_REGISTRY: dict[str, Callable] = {
 
 
 class PropertyFn(StrEnum):
-    """Registry for property calculation functions.
-
-    Because we are not able to pass live python functions through
-    workflow serialization, it is necessary to have an alternative
-    mechanism. While the functions included here are quite basic,
-    this gives users a place to patch in their own functions while
-    maintaining compatibility.
-    """
 
     POTENTIAL_ENERGY = "potential_energy"
     FORCES = "forces"
@@ -62,7 +51,6 @@ class PropertyFn(StrEnum):
 
 
 class TaskType(StrEnum):  # type: ignore[attr-defined]
-    """Enum for TorchSim task types."""
 
     STATIC = "Static"
     STRUCTURE_OPTIMIZATION = "Structure Optimization"
@@ -82,10 +70,6 @@ PROPERTY_FN_REGISTRY: dict[str, Callable] = {
 
 
 class TrajectoryReporterDetails(BaseModel):
-    """Details for a TorchSim trajectory reporter.
-
-    Stores configuration and metadata for trajectory reporting.
-    """
 
     state_frequency: int = Field(
         ..., description="Frequency at which states are reported."
@@ -116,7 +100,6 @@ class TrajectoryReporterDetails(BaseModel):
 
 
 class AutobatcherDetails(BaseModel):
-    """Details for a TorchSim autobatcher configuration."""
 
     autobatcher: Literal["BinningAutoBatcher", "InFlightAutoBatcher"] = Field(
         ..., description="The type of autobatcher to use."
@@ -148,7 +131,6 @@ class AutobatcherDetails(BaseModel):
 
 
 class CalculationOutput(BaseModel):
-    """Schema for the output of a TorchSim calculation."""
 
     energies: list[float] = Field(..., description="Potential energy of the systems.")
 
@@ -162,27 +144,15 @@ class CalculationOutput(BaseModel):
 
     @property
     def energy(self) -> float | None:
-        """Return energy for the first/only structure (for phonon compatibility)."""
-        if self.energies is None or len(self.energies) == 0:
-            return None
-        return self.energies[0]
+        pass
 
     @property
     def forces(self) -> list[Vector3D] | None:
-        """Return forces for the first/only structure (for single-structure mode)."""
-        if self.all_forces is None or len(self.all_forces) == 0:
-            return None
-        return self.all_forces[0]
+        pass
 
 
 class TorchSimCalculation(BaseModel):
-    """Schema for TorchSim calculation tasks.
 
-    This schema supports three task types: Static, Structure Optimization,
-    and Molecular Dynamics. Different fields are populated depending on the task_type.
-    """
-
-    # Common fields (always present)
     initial_structures: list[Structure] = Field(
         ..., description="List of initial structures for the calculation."
     )
@@ -215,7 +185,6 @@ class TorchSimCalculation(BaseModel):
         "or Molecular Dynamics).",
     )
 
-    # Optimization-specific fields (populated when task_type == STRUCTURE_OPTIMIZATION)
     optimizer: Optimizer | None = Field(
         None, description="The TorchSim optimizer instance used for optimization."
     )
@@ -247,7 +216,6 @@ class TorchSimCalculation(BaseModel):
         None, description="Tolerance for symmetry finding in case of fix_symmetry."
     )
 
-    # MD-specific fields (populated when task_type == MOLECULAR_DYNAMICS)
     integrator: Integrator | None = Field(
         None, description="The TorchSim integrator instance used for MD simulation."
     )
@@ -268,14 +236,12 @@ class TorchSimCalculation(BaseModel):
         None, description="Keyword arguments for the integrator configuration."
     )
 
-    # Static calculation-specific fields (populated when task_type == STATIC)
     all_properties: list[dict[str, list]] | None = Field(
         None, description="List of calculated properties for each structure."
     )
 
 
 class TorchSimTaskDoc(BaseModel):
-    """Base schema for TorchSim tasks."""
 
     structures: list[Structure] = Field(
         ..., description="List of final structures from the calculation."
@@ -293,7 +259,6 @@ class TorchSimTaskDoc(BaseModel):
 
     dir_name: str = Field(..., description="Directory name where the task was run.")
 
-    # Compatibility fields for phonon workflow integration
     structure: Structure | None = Field(
         None, description="First/only final structure (for single-structure workflows)."
     )
@@ -304,9 +269,4 @@ class TorchSimTaskDoc(BaseModel):
 
     @model_validator(mode="after")
     def set_compatibility_fields(self) -> TorchSimTaskDoc:
-        """Set structure and output fields for workflow compatibility."""
-        if self.structure is None and self.structures:
-            object.__setattr__(self, "structure", self.structures[0])
-        if self.output is None and self.calcs_reversed:
-            object.__setattr__(self, "output", self.calcs_reversed[0].output)
-        return self
+        pass

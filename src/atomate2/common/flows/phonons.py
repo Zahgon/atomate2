@@ -1,4 +1,3 @@
-"""Flows for calculating phonons."""
 
 from __future__ import annotations
 
@@ -35,112 +34,6 @@ SUPPORTED_CODES = frozenset(("vasp", "aims", "forcefields", "ase", "torchsim"))
 
 @dataclass
 class BasePhononMaker(Maker, ABC):
-    """
-    Maker to calculate harmonic phonons with a DFT/force field code and Phonopy.
-
-    Calculate the harmonic phonons of a material. Initially, a tight structural
-    relaxation is performed to obtain a structure without forces on the atoms.
-    Subsequently, supercells with one displaced atom are generated and accurate
-    forces are computed for these structures. With the help of phonopy, these
-    forces are then converted into a dynamical matrix. To correct for polarization
-    effects, a correction of the dynamical matrix based on BORN charges can
-    be performed. Finally, phonon densities of states, phonon band structures
-    and thermodynamic properties are computed.
-
-    .. Note::
-        It is heavily recommended to symmetrize the structure before passing it to
-        this flow. Otherwise, a different space group might be detected and too
-        many displacement calculations will be generated.
-        It is recommended to check the convergence parameters here and
-        adjust them if necessary. The default might not be strict enough
-        for your specific case.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    sym_reduce : bool
-        Whether to reduce the number of deformations using symmetry.
-    symprec : float
-        Symmetry precision to use in the
-        reduction of symmetry to find the primitive/conventional cell
-        (use_primitive_standard_structure, use_conventional_standard_structure)
-        and to handle all symmetry-related tasks in phonopy
-    displacement: float
-        displacement distance for phonons
-    min_length: float
-        min length of the supercell that will be built
-    max_length: float
-        max length of the supercell that will be built
-    prefer_90_degrees: bool
-        if set to True, supercell algorithm will first try to find a supercell
-        with 3 90 degree angles
-    get_supercell_size_kwargs: dict
-        kwargs that will be passed to get_supercell_size to determine supercell size
-    use_symmetrized_structure: str
-        allowed strings: "primitive", "conventional", None
-
-        - "primitive" will enforce to start the phonon computation
-          from the primitive standard structure
-          according to Setyawan, W., & Curtarolo, S. (2010).
-          High-throughput electronic band structure calculations:
-          Challenges and tools. Computational Materials Science,
-          49(2), 299-312. doi:10.1016/j.commatsci.2010.05.010.
-          This makes it possible to use certain k-path definitions
-          with this workflow. Otherwise, we must rely on seekpath
-        - "conventional" will enforce to start the phonon computation
-          from the conventional standard structure
-          according to Setyawan, W., & Curtarolo, S. (2010).
-          High-throughput electronic band structure calculations:
-          Challenges and tools. Computational Materials Science,
-          49(2), 299-312. doi:10.1016/j.commatsci.2010.05.010.
-          We will, however, use seekpath and primitive structures
-          as determined by phonopy to compute the phonon band structure
-    bulk_relax_maker: .ForceFieldRelaxMaker, .BaseAimsMaker, .BaseVaspMaker, or None
-        A maker to perform a tight relaxation on the bulk.
-        Set to ``None`` to skip the
-        bulk relaxation
-    static_energy_maker: .ForceFieldRelaxMaker, .BaseAimsMaker, .BaseVaspMaker,
-        .TorchSimStaticMaker, or None
-        A maker to perform the computation of the DFT energy on the bulk.
-        Set to ``None`` to skip the
-        static energy computation
-    born_maker: .ForceFieldStaticMaker, .BaseAsimsMaker, .BaseVaspMaker,
-        .TorchSimStaticMaker, or None
-        Maker to compute the BORN charges.
-    phonon_displacement_maker: .ForceFieldStaticMaker, .BaseAimsMaker, .BaseVaspMaker,
-        .TorchSimStaticMaker
-        Maker used to compute the forces for a supercell.
-    generate_frequencies_eigenvectors_kwargs : dict
-        Keyword arguments passed to :obj:`generate_frequencies_eigenvectors`.
-        - create_force_constants_file: bool
-            If True, a force constants file will be created
-        - force_constants_filename: str
-            If store_force_constants is True, the file name to store the force constants
-        - calculate_pdos: bool
-            If True, the projected phonon density of states will be calculated
-    create_thermal_displacements: bool
-        Bool that determines if thermal_displacement_matrices are computed
-    kpath_scheme: str
-        scheme to generate kpoints. Please be aware that
-        you can only use seekpath with any kind of cell
-        Otherwise, please use the standard primitive structure
-        Available schemes are:
-        "seekpath", "hinuma", "setyawan_curtarolo", "latimer_munro".
-        "seekpath" and "hinuma" are the same definition but
-        seekpath can be used with any kind of unit cell as
-        it relies on phonopy to handle the relationship
-        to the primitive cell and not pymatgen
-    code: str
-        determines the DFT or force field code.
-    store_force_constants: bool
-        if True, force constants will be stored
-    socket: bool
-        If True, uses the socket-io interface to run all displacements in a single
-        job, reducing overhead. In the specific case of TorchSim, this enables batching
-        of all static structure evaluations.
-        Note: socket=True is not supported for BaseVaspMaker.
-    """
 
     name: str = "phonon"
     sym_reduce: bool = True
@@ -253,18 +146,11 @@ class BasePhononMaker(Maker, ABC):
 
         jobs = []
 
-        # TODO: should this be after or before structural optimization as the
-        #  optimization could change the symmetry we could add a tutorial and point out
-        #  that the structure should be nearly optimized before the phonon workflow
         if self.use_symmetrized_structure == "primitive":
-            # These structures are compatible with many
-            # of the kpath algorithms that are used for Materials Project
             prim_job = structure_to_primitive(structure, self.symprec)
             jobs.append(prim_job)
             structure = prim_job.output
         elif self.use_symmetrized_structure == "conventional":
-            # it could be beneficial to use conventional standard structures to arrive
-            # faster at supercells with right angles
             conv_job = structure_to_conventional(structure, self.symprec)
             jobs.append(conv_job)
             structure = conv_job.output
@@ -273,7 +159,6 @@ class BasePhononMaker(Maker, ABC):
         optimization_run_uuid = None
 
         if self.bulk_relax_maker is not None:
-            # optionally relax the structure
             bulk_kwargs = {}
             if self.prev_calc_dir_argname is not None:
                 bulk_kwargs[self.prev_calc_dir_argname] = prev_dir
@@ -284,8 +169,6 @@ class BasePhononMaker(Maker, ABC):
             optimization_run_job_dir = bulk.output.dir_name
             optimization_run_uuid = bulk.output.uuid
 
-        # if supercell_matrix is None, supercell size will be determined after relax
-        # maker to ensure that cell lengths are really larger than threshold
         if supercell_matrix is None:
             supercell_job = get_supercell_size(
                 structure=structure,
@@ -298,7 +181,6 @@ class BasePhononMaker(Maker, ABC):
             jobs.append(supercell_job)
             supercell_matrix = supercell_job.output
 
-        # Computation of static energy
         total_dft_energy = None
         static_run_job_dir = None
         static_run_uuid = None
@@ -317,14 +199,12 @@ class BasePhononMaker(Maker, ABC):
             static_run_uuid = static_job.output.uuid
             prev_dir = static_job.output.dir_name
         elif total_dft_energy_per_formula_unit is not None:
-            # to make sure that one can reuse results from Doc
             compute_total_energy_job = get_total_energy_per_cell(
                 total_dft_energy_per_formula_unit, structure
             )
             jobs.append(compute_total_energy_job)
             total_dft_energy = compute_total_energy_job.output
 
-        # get a phonon object from phonopy
         displacements = generate_phonon_displacements(
             structure=structure,
             supercell_matrix=supercell_matrix,
@@ -337,7 +217,6 @@ class BasePhononMaker(Maker, ABC):
         )
         jobs.append(displacements)
 
-        # perform the phonon displacement calculations
         displacement_calcs = run_phonon_displacements(
             displacements=displacements.output,
             structure=structure,
@@ -349,7 +228,6 @@ class BasePhononMaker(Maker, ABC):
         )
         jobs.append(displacement_calcs)
 
-        # Computation of BORN charges
         born_run_job_dir = None
         born_run_uuid = None
         if self.born_maker is not None and (born is None or epsilon_static is None):
@@ -359,10 +237,6 @@ class BasePhononMaker(Maker, ABC):
             born_job = self.born_maker.make(structure, **born_kwargs)
             jobs.append(born_job)
 
-            # I am not happy how we currently access "born" charges
-            # This is very vasp specific code aims and forcefields
-            # do not support this at the moment, if this changes we have
-            # to update this section
             epsilon_static = born_job.output.calcs_reversed[0].output.epsilon_static
             born = born_job.output.calcs_reversed[0].output.outcar["born"]
             born_run_job_dir = born_job.output.dir_name
@@ -394,7 +268,6 @@ class BasePhononMaker(Maker, ABC):
 
         jobs.append(phonon_collect)
 
-        # create a flow including all jobs for a phonon computation
         return Flow(jobs, phonon_collect.output)
 
     @property

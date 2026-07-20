@@ -1,9 +1,3 @@
-"""
-Module defining MatPES flows.
-
-In case of questions, consult @janosh or @esoteric-ephemera. Makes PBE + r2SCAN
-cheaper than running both separately.
-"""
 
 from __future__ import annotations
 
@@ -23,38 +17,17 @@ if TYPE_CHECKING:
 
 @dataclass
 class MatPesStaticFlowMaker(Maker):
-    """MatPES flow doing a GGA static followed by meta-GGA static.
-
-    Uses the GGA WAVECAR to speed up electronic convergence on the meta-GGA static.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    static1 : .BaseVaspMaker
-        Maker to generate the first VASP static.
-    static2 : .BaseVaspMaker
-        Maker to generate the second VASP static.
-    static3 : .BaseVaspMaker or None
-        Maker to generate the optional third VASP static. Defaults to GGA static with
-        +U corrections if structure contains elements with +U corrections, else to None.
-    """
 
     name: str = "MatPES static flow"
     static1: Maker | None = field(
         default_factory=lambda: MatPesGGAStaticMaker(
             input_set_generator=MatPESStaticSet(
-                # write WAVECAR so we can use as pre-conditioned starting point for
-                # static2/3
                 user_incar_settings={"LWAVE": True}
             ),
         )
     )
     static2: Maker | None = field(
         default_factory=lambda: MatPesMetaGGAStaticMaker(
-            # start from pre-conditioned WAVECAR from static1 to speed up convergence
-            # could copy CHGCAR too but is redundant since VASP can reconstruct it from
-            # WAVECAR
             copy_vasp_kwargs={"additional_vasp_files": ("WAVECAR",)}
         )
     )
@@ -100,8 +73,6 @@ class MatPesStaticFlowMaker(Maker):
             jobs += [static2]
             output["static2"] = static2.output
 
-        # only run 3rd static if set generator not None and structure contains at least
-        # one element with Hubbard +U corrections
         if self.static3 is not None:
             static3_config = self.static3.input_set_generator.config_dict
             u_corrections = static3_config.get("INCAR", {}).get("LDAUU", {})

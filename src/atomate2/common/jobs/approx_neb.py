@@ -1,4 +1,3 @@
-"""Define common utility jobs needed for ApproxNEB flows."""
 
 from __future__ import annotations
 
@@ -78,11 +77,6 @@ def get_endpoints_and_relax(
             f"{', '.join([str(idx) for idx in missing_idxs])}"
         )
 
-    # In principle, it makes sense to use the magmoms from the host
-    # structure to initialize the host + inserted working ion calcs
-    # In practice, this throws unfixable "Bravais" errors in VASP
-    # (the actual reciprocal lattice does not have the expected
-    # symmetry of the ideal reciprocal lattice.)
     if host_structure.site_properties.get("magmom") is not None:
         host_structure.remove_site_property("magmom")
 
@@ -148,11 +142,9 @@ def collate_results(
         task_state = TaskState.SUCCESS
         images = entry
         if all(isinstance(v, str) for v in entry):
-            # hop calculation failed
             failure_reasons.extend([HopFailureReason(v) for v in entry])
             task_state = TaskState.FAILED
             if HopFailureReason.ENDPOINT in failure_reasons:
-                # Cannot populate any NEB fields, skip entirely
                 hop_dict[combo_name] = NebResult(
                     state=task_state, failure_reasons=failure_reasons
                 )
@@ -258,7 +250,6 @@ def get_images_and_relax(
             ]
         }
     """
-    # remove failed output and strip magmoms to avoid "Bravais" errors
     ep_structures = {}
     for k, calc in ep_output.items():
         if calc["structure"] is None:
@@ -281,16 +272,13 @@ def get_images_and_relax(
         if (ionic_radius := getattr(_wion, "average_ionic_radius", None)) is not None:
             min_hop_distance = 2 * ionic_radius
         elif (atomic_radius := getattr(_wion, "atomic_radius", None)) is not None:
-            # all elements have an atomic radius in pymatgen
             min_hop_distance = atomic_radius
 
     for hop_idx, combo in enumerate(inserted_combo_list):
         ini_ind, fin_ind = combo.split("+")
 
-        # See if we can proceed with this hop calculation:
         skip_reasons = []
         if not all(ep_structures.get(idx) for idx in [ini_ind, fin_ind]):
-            # At least one endpoint calculation failed
             skip_reasons.append(HopFailureReason.ENDPOINT)
         if (
             isinstance(min_hop_distance, float)
@@ -299,14 +287,12 @@ def get_images_and_relax(
             )
             < min_hop_distance
         ):
-            # The working ion hop distance is below the specified threshold
             skip_reasons.append(HopFailureReason.MIN_DIST)
 
         if len(skip_reasons) > 0:
             image_relax_output[combo] = [reason.value for reason in skip_reasons]
             continue
 
-        # potential place for uuid logic if depth first is desirable
         pathfinder_output = get_pathfinder_results(
             ep_structures[ini_ind],
             ep_structures[fin_ind],
@@ -316,7 +302,6 @@ def get_images_and_relax(
         )
         images_list = pathfinder_output["images"]
 
-        # add selective dynamics to structure
         if selective_dynamics_scheme == "fix_two_atoms":
             images_list = [
                 add_selective_dynamics_two_fixed_sites(
@@ -383,11 +368,9 @@ def get_pathfinder_results(
             "Inserted site indexes of end point structures must match for NEBPathfinder"
         )
 
-    # get potential gradient v from host chgcar
     v_chgcar = ChgcarPotential(host_charge_density)
     host_v = v_chgcar.get_v()
 
-    # perform pathfinding and get images
     neb_pf = NEBPathfinder(
         pf_struct_ini,
         pf_struct_fin,
@@ -395,9 +378,6 @@ def get_pathfinder_results(
         v=host_v,
         n_images=n_images + 1,
     )
-    # note NEBPathfinder currently returns n_images+1 images (rather than n_images)
-    # and the first and last images generated are very similar to the end points
-    # provided so they are discarded
 
     return {
         "images": neb_pf.images[1:-1],
@@ -432,12 +412,9 @@ def add_selective_dynamics_two_fixed_sites(
             f"{fixed_species_name} atom"
         )
 
-    # removes site properties to avoid error
     for p in structure.site_properties:
         structure.remove_site_property(p)
 
-    # add selectives dynamics with fix_two_atoms scheme
-    # fix the atom at fixed_index and the furthest atom in the structure
     ref_site = structure.sites[fixed_index]
     distances = [site.distance(ref_site) for site in structure.sites]
     farthest_index = distances.index(max(distances))
@@ -470,7 +447,6 @@ def get_working_ion_index(
     """
     for ind, site in enumerate(structure):
         if site.species_string == working_ion:
-            # assume that only the lowest indexed working ion is mobile
             return ind
     return None
 

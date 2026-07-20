@@ -1,4 +1,3 @@
-"""Makers to perform MD with the Atomic Simulation Environment (ASE)."""
 
 from __future__ import annotations
 
@@ -47,7 +46,6 @@ logger = logging.getLogger(__name__)
 
 
 class MDEnsemble(Enum):
-    """Define known MD ensembles."""
 
     nve = "nve"
     nvt = "nvt"
@@ -55,7 +53,6 @@ class MDEnsemble(Enum):
 
 
 class DynamicsPresets(Enum):
-    """Define mappings between MD ensembles and thermo-/baro-stats."""
 
     nve_velocityverlet = "ase.md.verlet.VelocityVerlet"
     nvt_andersen = "ase.md.andersen.Andersen"
@@ -84,88 +81,6 @@ for preset in DynamicsPresets.__members__:
 
 @dataclass
 class AseMDMaker(AseMaker, ABC):
-    """
-    Perform MD with the Atomic Simulation Environment (ASE).
-
-    Note the the following units are consistent with the VASP MD implementation:
-    - `temperature` in Kelvin (TEBEG and TEEND)
-    - `time_step` in femtoseconds (POTIM)
-    - `pressure` in kB (PSTRESS)
-
-    The default dynamics is Langevin NVT consistent with VASP MD, with the friction
-    coefficient set to 10 ps^-1 (LANGEVIN_GAMMA).
-
-    For the rest of preset dynamics (`_valid_dynamics`) and custom dynamics inherited
-    from ASE (`MolecularDynamics`), the user can specify the dynamics as a string or an
-    ASE class into the `dynamics` attribute. In this case, please consult the ASE
-    documentation for the parameters and units to pass into the ASE .MolecularDynamics
-    function through `ase_md_kwargs`.
-
-    Parameters
-    ----------
-    name : str
-        The name of the MD Maker
-    time_step : float | None = None.
-        The timestep of the MD run in fs.
-        If `None`, defaults to 0.5 fs if a structure/molecule contains an isotope of
-        hydrogen and 2 fs otherwise.
-    n_steps : int = 1000
-        The number of MD steps to run
-    ensemble : MDEnsemble | str = MDEnsemble.nvt
-        The ensemble to use. Valid ensembles are nve, nvt, or npt
-    temperature: float | Sequence | np.ndarray | None.
-        The temperature in Kelvin. If a sequence or 1D array, the temperature
-        schedule will be interpolated linearly between the given values. If a
-        float, the temperature will be constant throughout the run.
-    pressure: float | Sequence | None = None
-        The pressure in kilobar. If a sequence or 1D array, the pressure
-        schedule will be interpolated linearly between the given values. If a
-        float, the pressure will be constant throughout the run.
-    dynamics : str | ASE .MolecularDynamics | None = None
-        The dynamical thermostat to use. If dynamics is an ASE .MolecularDynamics
-        object, this uses the option specified explicitly by the user.
-        See _valid_dynamics for a list of pre-defined options when
-        specifying dynamics as a string.
-    ase_md_kwargs : dict | None = None
-        Options except for temperature and pressure to pass into the ASE
-        .MolecularDynamics function
-    calculator_kwargs : dict
-        kwargs to pass to the ASE calculator class
-    ionic_step_data : tuple[str,...] or None
-        Quantities to store in the TaskDocument ionic_steps.
-        Possible options are "struct_or_mol", "energy",
-        "forces", "stress", and "magmoms".
-        "structure" and "molecule" are aliases for "struct_or_mol".
-    store_trajectory : emmet .StoreTrajectoryOption = "partial"
-        Whether to store trajectory information ("no") or complete trajectories
-        ("partial" or "full", which are identical).
-    tags : list[str] or None
-        A list of tags for the task.
-    traj_file : str | Path | None = None
-        If a str or Path, the name of the file to save the MD trajectory to.
-        If None, the trajectory is not written to disk
-    traj_file_fmt : Literal["ase","pmg","xdatcar", "parquet"]
-        The format of the trajectory file to write.
-        If "ase", writes an ASE .Trajectory.
-        If "pmg", writes a Pymatgen .Trajectory.
-        If "xdatcar", writes a VASP-style XDATCAR
-        If "parquet", uses emmet.core's Trajectory object to write a high-efficiency
-            parquet format file containing the trajectory.
-    traj_interval : int
-        The step interval for saving the trajectories.
-    mb_velocity_seed : int or None
-        If an int, a random number seed for generating initial velocities
-        from a Maxwell-Boltzmann distribution.
-    zero_linear_momentum : bool = False
-        Whether to initialize the atomic velocities with zero linear momentum
-    zero_angular_momentum : bool = False
-        Whether to initialize the atomic velocities with zero angular momentum
-    verbose : bool = False
-        Whether to print stdout to screen during the MD run.
-    use_emmet_models : bool = False
-        Whether to use emmet-core (True) or pymatgen (False)
-        data models for larger objects, e.g., trajectories.
-    """
 
     name: str = "ASE MD"
     time_step: float | None = None
@@ -205,7 +120,6 @@ class AseMDMaker(AseMaker, ABC):
 
     def _get_ensemble_schedule(self) -> None:
         if self.ensemble == MDEnsemble.nve:
-            # Disable thermostat and barostat
             self.temperature = np.nan
             self.pressure = np.nan
             self.t_schedule = np.full(self.n_steps + 1, self.temperature)
@@ -216,9 +130,6 @@ class AseMDMaker(AseMaker, ABC):
             isinstance(self.temperature, np.ndarray) and self.temperature.ndim == 1
         ):
             self.t_schedule = self._interpolate_quantity(self.temperature, self.n_steps)
-        # NOTE: In ASE Langevin dynamics, the temperature are normally
-        # scalars, but in principle one quantity per atom could be specified by giving
-        # an array. This is not implemented yet here.
         else:
             self.t_schedule = np.full(self.n_steps + 1, self.temperature)
 
@@ -257,7 +168,6 @@ class AseMDMaker(AseMaker, ABC):
                 "temperature_K", self.t_schedule[0]
             )
 
-            # These use different kwargs for pressure
             if (
                 (
                     isinstance(self.dynamics, DynamicsPresets)
@@ -342,15 +252,12 @@ class AseMDMaker(AseMaker, ABC):
         self._get_ensemble_defaults()
 
         if self.time_step is None:
-            # If a mol_or_struct contains an isotope of hydrogen,
-            # set default `time_step` to 0.5 fs, and 2 fs otherwise.
             has_h_isotope = any(element.Z == 1 for element in mol_or_struct.composition)
             self.time_step = 0.5 if has_h_isotope else 2.0
 
         initial_velocities = mol_or_struct.site_properties.get("velocities")
 
         if isinstance(self.dynamics, str):
-            # Use known dynamics if `self.dynamics` is a str
             self.dynamics = self.dynamics.lower()
             if self.dynamics not in _valid_dynamics[self.ensemble]:
                 raise ValueError(
@@ -368,16 +275,12 @@ class AseMDMaker(AseMaker, ABC):
             )
 
         elif issubclass(self.dynamics, MolecularDynamics):
-            # Allow user to explicitly run ASE Dynamics class
             dynamics = self.dynamics
 
         atoms = mol_or_struct.to_ase_atoms()
 
         if dynamics is NPT:
-            # Note that until dynamics is instantiated,
-            # `isinstance(dynamics,NPT)` is False
 
-            # ASE NPT implementation requires upper triangular cell
             atoms.set_cell(atoms.cell.standard_form(form="upper")[0])
 
         if initial_velocities:
@@ -403,21 +306,6 @@ class AseMDMaker(AseMaker, ABC):
 
         md_runner.attach(md_observer, interval=self.traj_interval)
 
-        def _callback(dyn: MolecularDynamics = md_runner) -> None:
-            if self.ensemble == MDEnsemble.nve:
-                return
-            if hasattr(dyn, "_temperature_K"):
-                dyn._temperature_K = self.t_schedule[dyn.nsteps]  # noqa: SLF001
-            else:
-                dyn.set_temperature(temperature_K=self.t_schedule[dyn.nsteps])
-            if self.ensemble == MDEnsemble.nvt:
-                return
-
-            if "pressure_au" in self.ase_md_kwargs:
-                # set_pressure is broken for NPTBerendsen
-                dyn.pressure = self.p_schedule[dyn.nsteps] * 1e3 * units.bar
-            else:
-                dyn.set_stress(self.p_schedule[dyn.nsteps] * 1e3 * units.bar)
 
         md_runner.attach(_callback, interval=1)
         with contextlib.redirect_stdout(sys.stdout if self.verbose else io.StringIO()):
@@ -448,28 +336,15 @@ class AseMDMaker(AseMaker, ABC):
 
 @dataclass
 class LennardJonesMDMaker(AseMDMaker):
-    """
-    Perform an MD run with a Lennard-Jones 6-12 potential.
-
-    See `atomate2.ase.md.AseMDMaker` for full documentation.
-    """
 
     name: str = "Lennard-Jones 6-12 MD"
 
     def _get_calculator(self) -> Calculator:
-        """Lennard-Jones calculator."""
-        from ase.calculators.lj import LennardJones
-
-        return LennardJones(**self.calculator_kwargs)
+        pass
 
 
 @dataclass
 class GFNxTBMDMaker(AseMDMaker):
-    """
-    Perform an MD run with GFNn-xTB.
-
-    See `atomate2.ase.md.AseMDMaker` for full documentation.
-    """
 
     name: str = "GFNn-xTB MD"
     calculator_kwargs: dict = field(
@@ -490,13 +365,4 @@ class GFNxTBMDMaker(AseMDMaker):
     )
 
     def _get_calculator(self) -> Calculator:
-        """GFN-xTB / TBLite calculator."""
-        try:
-            from tblite.ase import TBLite
-        except ImportError:
-            raise ImportError(
-                "TBLite must be installed; please install TBLite using\n"
-                "`pip install -c conda-forge tblite-python`"
-            ) from None
-
-        return TBLite(atoms=None, **self.calculator_kwargs)
+        pass

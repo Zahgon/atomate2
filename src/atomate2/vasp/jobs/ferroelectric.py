@@ -1,4 +1,3 @@
-"""Job used in the Ferroelectric wflow."""
 
 from __future__ import annotations
 
@@ -44,7 +43,6 @@ def polarization_analysis(
         Document containing the polarization analysis results.
 
     """
-    # order previous calculations from nonpolar to polar
     ordered_keys = [
         f"interpolation_{i}" for i in reversed(range(len(interp_lcalcpol_outputs)))
     ]
@@ -68,12 +66,8 @@ def polarization_analysis(
         job_dirs.append(p["job_dir"])
         uuids.append(p["uuid"])
 
-    # If LCALCPOL = True then Outcar will parse and store the pseudopotential zvals.
     zval_dict = p["zval_dict"]
 
-    # Assumes that we want to calculate the ionic contribution to the dipole moment.
-    # VASP's ionic contribution is sometimes strange.
-    # See pymatgen.analysis.ferroelectricity.polarization.Polarization for details.
     p_elecs = [p["p_elecs"] for p in polarization_tasks]
     p_ions = [get_total_ionic_dipole(st, zval_dict) for st in structures]
 
@@ -109,8 +103,6 @@ def interpolate_structures(p_st: Structure, np_st: Structure, nimages: int) -> l
     -------
     List of interpolated structures
     """
-    # adding +1 to nimages to match convention used in the interpolate
-    # func where nonpolar is (weirdly) included in the nimages count
     return p_st.interpolate(
         np_st, nimages + 1, interpolate_lattices=True, autosort_tol=0.0
     )

@@ -1,4 +1,3 @@
-"""Flows for electron phonon calculations."""
 
 from __future__ import annotations
 
@@ -44,52 +43,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class ElectronPhononMaker(Maker):
-    """
-    Maker to create electron phonon displaced structures and band gap renormalisation.
-
-    This workflow contains:
-
-    1. An initial tight structure relaxation (optional if relax_maker set to None).
-    2. A static calculation to determine if the material is magnetic.
-    3. A finite-difference calculation to generate the electron-phonon displaced
-       structures. This is performed after a supercell transformation is applied. The
-       goal is to find a cubicish supercell with lengths > 15 Å. The size of the
-       supercell can be modified using the ``min_supercell_length`` option.
-    4. A uniform band structure calculation on each of the displaced structures
-       (comprising a static calculation and uniform non-self-consistent field
-       calculation).
-    5. A uniform band structure calculation on the bulk undisplaced supercell
-       structure, this is used as the ground state for calculating the band gap
-       renormalisation.
-
-    .. warning::
-        It is not recommended to disable the tight relaxation unless you know what you
-        are doing. Accurate forces are required to obtained non-imaginary phonon
-        frequencies.
-
-    .. warning::
-        Currently no check is performed to ensure all phonon frequencies are real.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    temperatures : tuple of float
-        Temperatures at which electron-phonon interactions are calculated.
-    min_supercell_length : float
-        Minimum supercell length in A. See :obj:`.CubicSupercellTransformation` for more
-        details.
-    relax_maker : BaseVaspMaker
-        Maker to use for the initial structure relaxation.
-    static_maker : BaseVaspMaker
-        Maker to use for the static calculation on the relaxed structure.
-    elph_displacement_maker : SupercellElectronPhononDisplacedStructureMaker
-        Maker to use to generate the supercell and calculate electron phonon displaced
-        structures.
-    uniform_maker : BaseVaspMaker
-        Maker to use to run the density of states on the displaced structures and
-        bulk supercell structure.
-    """
 
     name: str = "electron phonon"
     temperatures: tuple[float, ...] = DEFAULT_ELPH_TEMPERATURES
@@ -141,7 +94,6 @@ class ElectronPhononMaker(Maker):
         jobs = []
 
         if self.relax_maker is not None:
-            # optionally relax the structure
             relax = self.relax_maker.make(structure, prev_dir=prev_dir)
             jobs.append(relax)
             structure = relax.output.structure
@@ -149,16 +101,11 @@ class ElectronPhononMaker(Maker):
 
         static = self.static_maker.make(structure, prev_dir=prev_dir)
 
-        # update temperatures and supercell size for elph maker but make sure to not
-        # overwrite original maker
         elph_maker = deepcopy(self.elph_displacement_maker)
         elph_maker.temperatures = self.temperatures
         elph_maker.min_supercell_length = self.min_supercell_length
         elph = elph_maker.make(static.output.structure, prev_dir=static.output.dir_name)
 
-        # use static as prev_dir so we don't inherit elph settings; using a prev
-        # directory is useful as we can turn off magnetism if necessary which gives a
-        # reasonable speedup
         supercell_dos = self.uniform_maker.make(
             elph.output.structure, prev_dir=static.output.dir_name
         )
@@ -188,7 +135,6 @@ class ElectronPhononMaker(Maker):
             static.output.structure,
         )
 
-        # allow some of the displacements to fail
         renorm.config.on_missing_references = OnMissing.NONE
 
         jobs.extend([static, elph, supercell_dos, displaced_doses, renorm])
@@ -197,59 +143,6 @@ class ElectronPhononMaker(Maker):
 
 @dataclass
 class HSEElectronPhononMaker(ElectronPhononMaker):
-    """
-    Maker to create electron phonon displaced structures and HSE gap renormalisation.
-
-    This workflow contains:
-
-    1. An initial PBEsol tight structure relaxation (optional if relax_maker set to
-       None).
-    2. A PBEsol static calculation to determine if the material is magnetic.
-    3. A PBEsol finite-difference calculation to generate the electron-phonon displaced
-       structures. This is performed after a supercell transformation is applied. The
-       goal is to find a cubicish supercell with lengths > 15 Å. The size of the
-       supercell can be modified using the ``min_supercell_length`` option.
-    4. A HSE06 uniform band structure calculation on each of the displaced structures
-       (comprising a static calculation and uniform non-self-consistent field
-       calculation).
-    5. A HSE06 uniform band structure calculation on the bulk undisplaced supercell
-       structure, this is used as the ground state for calculating the band gap
-       renormalisation.
-
-    .. note::
-        The only difference between this workflow and :obj:`ElectronPhononMaker` is that
-        the uniform electronic structures are obtained using HSE06 rather than PBEsol.
-        All other calculations (relaxations, phonon frequencies etc, are still obtained
-        using PBEsol).
-
-    .. warning::
-        It is not recommended to disable the tight relaxation unless you know what you
-        are doing. Accurate forces are required to obtained non-imaginary phonon
-        frequencies.
-
-    .. warning::
-        Currently no check is performed to ensure all phonon frequencies are real.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    temperatures : tuple of float
-        Temperatures at which electron-phonon interactions are calculated.
-    min_supercell_length : float
-        Minimum supercell length in A. See :obj:`.CubicSupercellTransformation` for more
-        details.
-    relax_maker : BaseVaspMaker
-        Maker to use for the initial structure relaxation.
-    static_maker : BaseVaspMaker
-        Maker to use for the static calculation on the relaxed structure.
-    elph_displacement_maker : SupercellElectronPhononDisplacedStructureMaker
-        Maker to use to generate the supercell and calculate electron phonon displaced
-        structures.
-    uniform_maker : BaseVaspMaker
-        Maker to use to run the density of states on the displaced structures and
-        bulk supercell structure.
-    """
 
     name: str = "hse electron phonon"
     uniform_maker: BaseVaspMaker = field(

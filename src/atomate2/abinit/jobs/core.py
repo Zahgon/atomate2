@@ -1,4 +1,3 @@
-"""Core jobs for running ABINIT calculations."""
 
 from __future__ import annotations
 
@@ -37,13 +36,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class StaticMaker(BaseAbinitMaker):
-    """Maker to create ABINIT scf jobs.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    """
 
     calc_type: str = "scf"
     name: str = "Scf calculation"
@@ -58,13 +50,6 @@ class StaticMaker(BaseAbinitMaker):
 
 @dataclass
 class LineNonSCFMaker(BaseAbinitMaker):
-    """Maker to create a jobs with a non-scf ABINIT calculation along a line.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    """
 
     calc_type: str = "nscf_line"
     name: str = "Line non-Scf calculation"
@@ -79,13 +64,6 @@ class LineNonSCFMaker(BaseAbinitMaker):
 
 @dataclass
 class UniformNonSCFMaker(BaseAbinitMaker):
-    """Maker to create a jobs with a non-scf ABINIT calculation along a line.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    """
 
     calc_type: str = "nscf_uniform"
     name: str = "Uniform non-Scf calculation"
@@ -100,7 +78,6 @@ class UniformNonSCFMaker(BaseAbinitMaker):
 
 @dataclass
 class NonSCFMaker(BaseAbinitMaker):
-    """Maker to create non SCF calculations."""
 
     calc_type: str = "nscf"
     name: str = "non-Scf calculation"
@@ -109,7 +86,6 @@ class NonSCFMaker(BaseAbinitMaker):
         default_factory=NonSCFSetGenerator
     )
 
-    # Non dataclass variables:
     CRITICAL_EVENTS: ClassVar[Sequence[AbinitCriticalWarning]] = (
         NscfConvergenceWarning,
     )
@@ -147,7 +123,6 @@ class NonSCFMaker(BaseAbinitMaker):
 
 @dataclass
 class NonSCFWfqMaker(NonSCFMaker):
-    """Maker to create non SCF calculations for the WFQ."""
 
     calc_type: str = "nscf_wfq"
     name: str = "non-Scf calculation"
@@ -156,7 +131,6 @@ class NonSCFWfqMaker(NonSCFMaker):
         default_factory=NonScfWfqInputGenerator
     )
 
-    # Non dataclass variables:
     CRITICAL_EVENTS: ClassVar[Sequence[AbinitCriticalWarning]] = (
         NscfConvergenceWarning,
     )
@@ -164,13 +138,11 @@ class NonSCFWfqMaker(NonSCFMaker):
 
 @dataclass
 class RelaxMaker(BaseAbinitMaker):
-    """Maker to create relaxation calculations."""
 
     calc_type: str = "relax"
     input_set_generator: AbinitInputGenerator = field(default_factory=RelaxSetGenerator)
     name: str = "Relaxation calculation"
 
-    # non-dataclass variables
     CRITICAL_EVENTS: ClassVar[Sequence[AbinitCriticalWarning]] = (
         RelaxConvergenceWarning,
     )
@@ -178,8 +150,6 @@ class RelaxMaker(BaseAbinitMaker):
     @classmethod
     def ionic_relaxation(cls, *args, **kwargs) -> Job:
         """Create an ionic relaxation maker."""
-        # TODO: add the possibility to tune the RelaxInputGenerator options
-        #  in this class method.
         return cls(
             input_set_generator=RelaxSetGenerator(*args, relax_cell=False, **kwargs),
             name=cls.name + " (ions only)",
@@ -188,8 +158,6 @@ class RelaxMaker(BaseAbinitMaker):
     @classmethod
     def full_relaxation(cls, *args, **kwargs) -> Job:
         """Create a full relaxation maker."""
-        # TODO: add the possibility to tune the RelaxInputGenerator options
-        #  in this class method.
         return cls(
             input_set_generator=RelaxSetGenerator(*args, relax_cell=True, **kwargs)
         )

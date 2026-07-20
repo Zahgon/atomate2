@@ -1,4 +1,3 @@
-"""Powerups for performing common modifications on ABINIT jobs and flows."""
 
 from __future__ import annotations
 
@@ -64,39 +63,7 @@ def update_user_abinit_settings(
     name_filter: str | None = None,
     class_filter: type[Maker] | None = BaseAbinitMaker,
 ) -> Job | Flow | Maker:
-    """
-    Update the user_abinit_settings of any AbinitInputGenerator in the flow.
-
-    Alternatively, if a Maker is supplied, the user_abinit_settings of the maker will
-    be updated.
-
-    Note, this returns a copy of the original Job/Flow/Maker. I.e., the update does not
-    happen in place.
-
-    Parameters
-    ----------
-    flow : .Job or .Flow or .Maker
-        A job, flow or Maker.
-    abinit_updates : dict
-        The updates to apply. Existing keys in user_abinit_settings will not be modified
-        unless explicitly specified in ``abinit_updates``.
-    name_filter : str or None
-        A filter for the name of the jobs.
-    class_filter : Maker or None
-        A filter for the BaseAbinitMaker class used to generate the flows. Note the
-        class filter will match any subclasses.
-
-    Returns
-    -------
-    Job or Flow or Maker
-        A copy of the input flow/job/maker modified to use the updated abinit settings.
-    """
-    dict_mod_updates = {
-        f"input_set_generator->user_abinit_settings->{k}": v
-        for k, v in abinit_updates.items()
-    }
-
-    return update_maker_kwargs(class_filter, dict_mod_updates, flow, name_filter)
+    pass
 
 
 def update_factory_kwargs(
@@ -105,39 +72,7 @@ def update_factory_kwargs(
     name_filter: str | None = None,
     class_filter: type[Maker] | None = BaseAbinitMaker,
 ) -> Job | Flow | Maker:
-    """
-    Update the factory_kwargs of any AbinitInputGenerator in the flow.
-
-    Alternatively, if a Maker is supplied, the factory_kwargs of the maker will
-    be updated.
-
-    Note, this returns a copy of the original Job/Flow/Maker. I.e., the update does not
-    happen in place.
-
-    Parameters
-    ----------
-    flow : .Job or .Flow or .Maker
-        A job, flow or Maker.
-    factory_updates : dict
-        The updates to apply. Existing keys in factory_kwargs will not be modified
-        unless explicitly specified in ``factory_updates``.
-    name_filter : str or None
-        A filter for the name of the jobs.
-    class_filter : Maker or None
-        A filter for the BaseAbinitMaker class used to generate the flows. Note the
-        class filter will match any subclasses.
-
-    Returns
-    -------
-    Job or Flow or Maker
-        A copy of the input flow/job/maker modified to use the updated factory settings.
-    """
-    dict_mod_updates = {
-        f"input_set_generator->factory_kwargs->{k}": v
-        for k, v in factory_updates.items()
-    }
-
-    return update_maker_kwargs(class_filter, dict_mod_updates, flow, name_filter)
+    pass
 
 
 def update_user_kpoints_settings(
@@ -193,34 +128,4 @@ def update_generator_attributes(
     name_filter: str | None = None,
     class_filter: type[Maker] | None = BaseAbinitMaker,
 ) -> Job | Flow | Maker:
-    """
-    Update any attribute of any AbinitInputGenerator in the flow.
-
-    Alternatively, if a Maker is supplied, the attributes of the maker will
-    be updated.
-
-    Note, this returns a copy of the original Job/Flow/Maker. I.e., the update does not
-    happen in place.
-
-    Parameters
-    ----------
-    flow : .Job or .Flow or .Maker
-        A job, flow or Maker.
-    generator_updates : dict
-        The updates to apply to the input generator.
-    name_filter : str or None
-        A filter for the name of the jobs.
-    class_filter : Maker or None
-        A filter for the BaseAbinitMaker class used to generate the flows. Note the
-        class filter will match any subclasses.
-
-    Returns
-    -------
-    Job or Flow or Maker
-        A copy of the input flow/job/maker modified to use the updated factory settings.
-    """
-    dict_mod_updates = {
-        f"input_set_generator->{k}": v for k, v in generator_updates.items()
-    }
-
-    return update_maker_kwargs(class_filter, dict_mod_updates, flow, name_filter)
+    pass

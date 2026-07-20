@@ -1,4 +1,3 @@
-"""Define ApproxNEB jobs."""
 
 from __future__ import annotations
 
@@ -22,7 +21,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class ApproxNebHostRelaxMaker(DoubleRelaxMaker):
-    """Maker to perform a double relaxation on an ApproxNEB host structure."""
 
     name: str = "ApproxNEB host relax"
     relax_maker1: BaseVaspMaker | None = field(
@@ -35,12 +33,6 @@ class ApproxNebHostRelaxMaker(DoubleRelaxMaker):
 
 @dataclass
 class ApproxNebImageRelaxMaker(RelaxMaker):
-    """
-    Maker to perform a double relaxation on an ApproxNEB endpoint/image structure.
-
-    Very important here - we are doing a double relaxation in the atomate style,
-    where one job maps to two VASP calculations.
-    """
 
     name: str = "ApproxNEB image relax"
     input_set_generator: VaspInputGenerator = field(

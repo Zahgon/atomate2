@@ -1,4 +1,3 @@
-"""Common functions for operations on files."""
 
 from __future__ import annotations
 
@@ -312,15 +311,12 @@ def find_and_filter_files(
     else:
         files = []
         for file in include_files:
-            # expand any glob matches
             globbed_files = file_client.glob(directory / file, host=host)
 
             if len(globbed_files) > 0:
-                # Need to get the path relative to directory
                 globbed_files = [p.relative_to(directory) for p in globbed_files]
                 files.extend(globbed_files)
             else:
-                # no matches, only add the original file to be dealt with later
                 files.append(Path(file))
 
     filtered_files = []

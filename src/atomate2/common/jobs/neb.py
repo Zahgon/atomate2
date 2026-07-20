@@ -1,4 +1,3 @@
-"""Define tools for analyzing NEB runs."""
 
 from __future__ import annotations
 
@@ -15,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class NebInterpolation(Enum):
-    """Methods for interpolating NEB images."""
 
     LINEAR = "linear"
     IDPP = "IDPP"

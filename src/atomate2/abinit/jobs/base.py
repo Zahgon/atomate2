@@ -1,4 +1,3 @@
-"""Definition of base ABINIT job maker."""
 
 from __future__ import annotations
 
@@ -50,7 +49,6 @@ def setup_job(
     wall_time: int | None,
 ) -> JobSetupVars:
     """Set up job."""
-    # Get the start time.
     start_time = time.time()
 
     if structure is None and prev_outputs is None and restart_from is None:
@@ -59,37 +57,22 @@ def setup_job(
         )
 
     if history is None:
-        # Supposedly the first time the job is created
         history = JobHistory()
     elif restart_from is not None:
-        # We want to log the restart only if the restart_from is due to
-        # an automatic restart, not a restart from e.g. another scf or relax
-        # with different parameters.
         history.log_restart()
 
-    # Set up working directory
     workdir = os.getcwd()
 
-    # Log information about the start of the job
     history.log_start(workdir=workdir, start_time=start_time)
 
-    # Set up logging
     log_handler = logging.FileHandler("atomate2_abinit.log")
     log_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
     logging.getLogger("pymatgen.io.abinit").addHandler(log_handler)
     logging.getLogger("abipy").addHandler(log_handler)
     logging.getLogger("atomate2").addHandler(log_handler)
 
-    # Load the atomate settings for abinit to get configuration parameters
-    # TODO: how to allow for tuned parameters on a per-job basis ?
-    #  (similar to fw_spec-passed settings)
     abipy_manager = None  # Currently disabled as it is needed for autoparal,
-    # which is not yet supported
-    # abipy_manager = get_abipy_manager(SETTINGS)
 
-    # set walltime, if possible
-    # TODO: see in set_walltime, where to put this walltime_command
-    # wall_time = wall_time
     return JobSetupVars(
         start_time=start_time,
         history=history,
@@ -102,22 +85,6 @@ def setup_job(
 @due.dcite(Doi("10.1063/5.028827"), description="Most recent Abinit paper")
 @dataclass
 class BaseAbinitMaker(Maker):
-    """
-    Base ABINIT job maker.
-
-    Parameters
-    ----------
-    input_set_generator : AbinitInputGenerator
-        Input generator to be used.
-    name : str
-        The job name.
-    wall_time : int
-        The wall time for the job.
-    run_abinit_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_abinit`.
-    task_document_kwargs : dict[str, Any]
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    """
 
     input_set_generator: AbinitInputGenerator
     name: str = "base abinit job"
@@ -125,7 +92,6 @@ class BaseAbinitMaker(Maker):
     run_abinit_kwargs: dict[str, Any] = field(default_factory=dict)
     task_document_kwargs: dict[str, Any] = field(default_factory=dict)
 
-    # class variables
     CRITICAL_EVENTS: ClassVar[Sequence[AbinitCriticalWarning]] = ()
 
     def __post_init__(self) -> None:
@@ -156,7 +122,6 @@ class BaseAbinitMaker(Maker):
         history : JobHistory
             A JobHistory object containing the history of this job.
         """
-        # Setup job and get general job configuration
         config = setup_job(
             structure=structure,
             prev_outputs=prev_outputs,
@@ -165,7 +130,6 @@ class BaseAbinitMaker(Maker):
             wall_time=self.wall_time,
         )
 
-        # Write abinit input set
         write_abinit_input_set(
             structure=structure,
             input_set_generator=self.input_set_generator,
@@ -174,14 +138,12 @@ class BaseAbinitMaker(Maker):
             directory=config.workdir,
         )
 
-        # Run abinit
         run_abinit(
             wall_time=config.wall_time,
             start_time=config.start_time,
             **self.run_abinit_kwargs,
         )
 
-        # parse Abinit outputs
 
         task_doc = AbinitTaskDoc.from_directory(
             Path.cwd(),
@@ -215,8 +177,6 @@ class BaseAbinitMaker(Maker):
             )
 
         if history.run_number > max_restarts:
-            # TODO: check here if we should stop jobflow or children or
-            #  if we should throw an error.
             unconverged_error = UnconvergedError(
                 self,
                 msg=f"Unconverged after {history.run_number} runs.",

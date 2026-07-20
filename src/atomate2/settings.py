@@ -1,4 +1,3 @@
-"""Settings for atomate2."""
 
 from __future__ import annotations
 
@@ -14,22 +13,11 @@ _ENV_PREFIX = "atomate2_"
 
 
 class Atomate2Settings(BaseSettings):
-    """
-    Settings for atomate2.
-
-    The default way to modify these is to modify ~/.atomate2.yaml. Alternatively,
-    the environment variable ATOMATE2_CONFIG_FILE can be set to point to a yaml file
-    with atomate2 settings.
-
-    Lastly, the variables can be modified directly through environment variables by
-    using the "ATOMATE2" prefix. E.g. ATOMATE2_SCRATCH_DIR = path/to/scratch.
-    """
 
     CONFIG_FILE: str = Field(
         _DEFAULT_CONFIG_FILE_PATH, description="File to load alternative defaults from."
     )
 
-    # general settings
     PHONON_SYMPREC: float = Field(
         1e-3, description="Symmetry precision for spglib symmetry finding."
     )
@@ -45,7 +33,6 @@ class Atomate2Settings(BaseSettings):
         None, description="Path to scratch directory used by custodian."
     )
 
-    # VASP specific settings
     VASP_CMD: str = Field(
         "vasp_std", description="Command to run standard version of VASP."
     )
@@ -94,9 +81,6 @@ class Atomate2Settings(BaseSettings):
     DDEC6_ATOMIC_DENSITIES_DIR: str | None = Field(
         default=None,
         description="Directory where the atomic densities are stored.",
-        # TODO uncomment below once that functionality is actually implemented
-        # If not set, pymatgen tries to auto-download the densities and extract them
-        # into ~/.cache/pymatgen/ddec
     )
 
     VASP_ZIP_FILES: bool | Literal["atomate"] = Field(
@@ -182,22 +166,18 @@ class Atomate2Settings(BaseSettings):
         "to the simulation will be compressed. If False no file is compressed.",
     )
 
-    # FHI-aims settings
     AIMS_CMD: str = Field(
         "aims.x > aims.out", description="The default command used run FHI-aims"
     )
 
-    # Elastic constant settings
     ELASTIC_FITTING_METHOD: str = Field(
         "finite_difference", description="Elastic constant fitting method"
     )
 
-    # AMSET settings
     AMSET_SETTINGS_UPDATE: dict | None = Field(
         None, description="Additional settings applied to AMSET settings file."
     )
 
-    # ABINIT settings
     ABINIT_MPIRUN_CMD: str | None = Field(None, description="Mpirun command.")
     ABINIT_CMD: str = Field("abinit", description="Abinit command.")
     ABINIT_MRGDDB_CMD: str = Field("mrgddb", description="Mrgddb command.")
@@ -226,7 +206,6 @@ class Atomate2Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix=_ENV_PREFIX)
 
-    # QChem specific settings
 
     QCHEM_CMD: str = Field(
         "qchem", description="Command to run standard version of qchem."
@@ -290,37 +269,4 @@ class Atomate2Settings(BaseSettings):
     @model_validator(mode="before")
     @classmethod
     def load_default_settings(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Load settings from file or environment variables.
-
-        Loads settings from a root file if available and uses that as defaults in
-        place of built-in defaults.
-
-        This allows setting of the config file path through environment variables.
-        """
-        from monty.serialization import loadfn
-
-        config_file_path = values.get(key := "CONFIG_FILE", _DEFAULT_CONFIG_FILE_PATH)
-        env_var_name = f"{_ENV_PREFIX.upper()}{key}"
-        config_file_path = Path(config_file_path).expanduser()
-
-        new_values = {}
-        if config_file_path.exists():
-            if config_file_path.stat().st_size == 0:
-                warnings.warn(
-                    f"Using {env_var_name} at {config_file_path} but it's empty",
-                    stacklevel=2,
-                )
-            else:
-                try:
-                    new_values.update(loadfn(config_file_path))
-                except ValueError:
-                    raise SyntaxError(
-                        f"{env_var_name} at {config_file_path} is unparsable"
-                    ) from None
-        # warn if config path is not the default but file doesn't exist
-        elif config_file_path != Path(_DEFAULT_CONFIG_FILE_PATH).expanduser():
-            warnings.warn(
-                f"{env_var_name} at {config_file_path} does not exist", stacklevel=2
-            )
-
-        return new_values | values
+        pass

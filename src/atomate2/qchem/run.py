@@ -1,4 +1,3 @@
-"""Functions to run QChem in atomate 2."""
 
 from __future__ import annotations
 
@@ -27,12 +26,6 @@ logger = logging.getLogger(__name__)
 
 
 class JobType(ValueEnum):
-    """
-    Type of QChem job.
-
-        - ``DIRECT``: Run QChem without using custodian.
-        - ``NORMAL``: Normal custodian :obj:`.QCJob`.
-    """
 
     DIRECT = "direct"
     NORMAL = "normal"
@@ -44,7 +37,6 @@ def run_qchem(
     max_errors: int = SETTINGS.QCHEM_CUSTODIAN_MAX_ERRORS,
     scratch_dir: str = SETTINGS.CUSTODIAN_SCRATCH_DIR,
     handlers: Sequence[ErrorHandler] = _DEFAULT_HANDLERS,
-    # wall_time: int | None = None,
     qchem_job_kwargs: dict[str, Any] = None,
     custodian_kwargs: dict[str, Any] = None,
 ) -> None:

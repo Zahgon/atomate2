@@ -1,4 +1,3 @@
-"""Define QHA flow for VASP."""
 
 from __future__ import annotations
 
@@ -14,52 +13,6 @@ from atomate2.vasp.sets.core import TightRelaxSetGenerator
 
 @dataclass
 class QhaMaker(CommonQhaMaker):
-    """
-    Perform quasi-harmonic approximation.
-
-    First relax a structure using relax_maker.
-    Then perform a series of deformations on the relaxed structure, and
-    then compute harmonic phonons for each deformed structure.
-    Finally, compute Gibbs free energy.
-
-    Parameters
-    ----------
-    name: str
-        Name of the flows produced by this maker.
-    initial_relax_maker: .TightRelaxMaker | None
-        Maker to relax the input structure.
-    eos_relax_maker: .TightRelaxMaker | None
-        Maker to relax deformed structures for the EOS fit.
-        The volume has to be fixed!
-    phonon_maker: .PhononMaker
-        Maker to compute phonons. The volume has to be fixed!
-        The beforehand relaxation could be switched off.
-    linear_strain: tuple[float, float]
-        Percentage linear strain to apply as a deformation, default = -5% to 5%.
-    number_of_frames: int
-        Number of strain calculations to do for EOS fit, default = 6.
-    t_max: float | None
-        Maximum temperature until which the QHA will be performed
-    pressure: float | None
-        Pressure at which the QHA will be performed (default None, no pressure)
-    skip_analysis: bool
-        Skips the analysis step and only performs EOS and phonon computations.
-    ignore_imaginary_modes: bool
-        By default, volumes where the harmonic phonon approximation shows imaginary
-        will be ignored
-    eos_type: supported_eos
-        Equation of State type used for the fitting. Defaults to vinet.
-    min_length: float
-        min length of the supercell that will be built
-    max_length: float
-        max length of the supercell that will be built
-    prefer_90_degrees: bool
-        if set to True, supercell algorithm will first try to find a supercell
-        with 3 90 degree angles
-    get_supercell_size_kwargs: dict
-        kwargs that will be passed to get_supercell_size to determine supercell size
-
-    """
 
     name: str = "VASP QHA Maker"
     initial_relax_maker: TightRelaxMaker | None = field(default_factory=TightRelaxMaker)
@@ -84,12 +37,4 @@ class QhaMaker(CommonQhaMaker):
 
     @property
     def prev_calc_dir_argname(self) -> str:
-        """Name of argument informing static maker of previous calculation directory.
-
-        As this differs between different DFT codes (e.g., VASP, CP2K), it
-        has been left as a property to be implemented by the inheriting class.
-
-        Note: this is only applicable if a relax_maker is specified; i.e., two
-        calculations are performed for each ordering (relax -> static)
-        """
-        return "prev_dir"
+        pass

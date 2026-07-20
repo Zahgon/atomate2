@@ -1,4 +1,3 @@
-"""Jobs used in the calculation of surface adsorption energy."""
 
 from __future__ import annotations
 
@@ -17,7 +16,6 @@ from pymatgen.io.vasp.sets import MPRelaxSet
 from atomate2.vasp.jobs.base import BaseVaspMaker
 from atomate2.vasp.schemas.adsorption import AdsorptionDocument
 
-# from atomate2.vasp.sets.core import RelaxSetGenerator, StaticSetGenerator
 
 if TYPE_CHECKING:
     from atomate2.vasp.sets.base import VaspInputGenerator
@@ -27,15 +25,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BulkRelaxMaker(BaseVaspMaker):
-    """Maker for molecule relaxation.
-
-    Parameters
-    ----------
-    name: str
-        The name of the flow produced by the maker.
-    input_set_generator: VaspInputGenerator
-        The input set generator for the relaxation calculation.
-    """
 
     name: str = "bulk_relax_maker__"
     input_set_generator: VaspInputGenerator = field(
@@ -57,15 +46,6 @@ class BulkRelaxMaker(BaseVaspMaker):
 
 @dataclass
 class MolRelaxMaker(BaseVaspMaker):
-    """Maker for molecule relaxation.
-
-    Parameters
-    ----------
-    name: str
-        The name of the flow produced by the maker.
-    input_set_generator: VaspInputGenerator
-        The input set generator for the relaxation calculation.
-    """
 
     name: str = "mol_relax_maker__"
     input_set_generator: VaspInputGenerator = field(
@@ -95,15 +75,6 @@ class MolRelaxMaker(BaseVaspMaker):
 
 @dataclass
 class MolStaticMaker(BaseVaspMaker):
-    """Maker for molecule static energy calculation.
-
-    Parameters
-    ----------
-    name: str
-        The name of the flow produced by the maker.
-    input_set_generator: VaspInputGenerator
-        The input set generator for the static energy calculation.
-    """
 
     name: str = "mol_static_maker__"
     input_set_generator: VaspInputGenerator = field(
@@ -133,15 +104,6 @@ class MolStaticMaker(BaseVaspMaker):
 
 @dataclass
 class SlabRelaxMaker(BaseVaspMaker):
-    """Maker for adsorption slab relaxation.
-
-    Parameters
-    ----------
-    name: str
-        The name of the flow produced by the maker.
-    input_set_generator: VaspInputGenerator
-        The input set generator for the relaxation calculation.
-    """
 
     name: str = "slab_relax_maker__"
     input_set_generator: VaspInputGenerator = field(
@@ -163,15 +125,6 @@ class SlabRelaxMaker(BaseVaspMaker):
 
 @dataclass
 class SlabStaticMaker(BaseVaspMaker):
-    """Maker for slab static energy calculation.
-
-    Parameters
-    ----------
-    name: str
-        The name of the flow produced by the maker.
-    input_set_generator: VaspInputGenerator
-        The input set generator for the static energy calculation.
-    """
 
     name: str = "slab_static_maker__"
     input_set_generator: VaspInputGenerator = field(
@@ -210,7 +163,6 @@ def remove_adsorbate(slab: Structure) -> Structure:
         for i, site in enumerate(slab)
         if site.properties.get("surface_properties") == "adsorbate"
     ]
-    # Remove the adsorbate sites - must be this way to avoid change of indices
     return slab.remove_sites(adsorbate_indices)
 
 
@@ -395,13 +347,10 @@ def adsorption_calculations(
         configuration_numbers.append(idx)
         job_dirs.append(adslabs_data["dirs"][idx])
 
-    # Sort the data by adsorption energy
     sorted_indices = sorted(
         range(len(adsorption_energies)), key=lambda k: adsorption_energies[k]
     )
 
-    # Apply the sorted indices to all lists
-    # Then create and return the AdsorptionDocument instance
     return AdsorptionDocument(
         **{
             k: [v[i] for i in sorted_indices]

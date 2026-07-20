@@ -1,4 +1,3 @@
-"""Flows for calculating magnetic orderings and other magnetism-related tasks."""
 
 from __future__ import annotations
 
@@ -29,66 +28,6 @@ __all__ = ["MagneticOrderingsMaker"]
 
 @dataclass
 class MagneticOrderingsMaker(Maker, ABC):
-    """Maker to calculate possible collinear magnetic orderings for a material.
-
-    Given an input structure, possible magnetic orderings will be enumerated and ranked
-    based on symmetry up to a maximum number of orderings. Each ordering will be
-    optionally relaxed and a higher quality static calculation performed to obtain a
-    total energy. The lowest energy ordering is the predicted ground-state collinear
-    ordering.
-
-    This Maker can be trivially implemented for your DFT code of choice by
-    utilizing the appropriate static/relax makers. However, for postprocessing to
-    work correctly, one must ensure that the calculation outputs can be processed into a
-    MagneticOrderingsDocument. As the TaskDoc class is currently defined only for
-    VASP, one should ensure that the task document returned during their DFT runs
-    contains the necessary parameters (e.g., TaskDoc.input.magnetic_moments).
-    This warning will be removed once a universal TaskDoc is implemented (Issue #741).
-
-    This workflow was benchmarked with VASP for a wide range of test materials and
-    originally implemented in atomate (v1) for VASP as the MagneticOrderingsWF. Please
-    refer to the following paper for more information and cite appropriately:
-
-        Horton, M.K., Montoya, J.H., Liu, M. et al. High-throughput prediction of the
-        ground-state collinear magnetic order of inorganic materials using Density
-        Functional Theory. npj Computational Materials 5, 64 (2019).
-        https://doi.org/10.1038/s41524-019-0199-7
-
-    .. Note::
-        Good performance of this workflow is ultimately dependent on an appropriate
-        choice of Hubbard U, Hund J values and/or the functional. The defaults will work
-        well for many transition metal oxides.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this Maker.
-    static_maker : Maker
-        Maker used to perform static calculations for total energy. VASP is selected as
-        the default DFT code (atomate2.vasp.jobs.StaticMaker).
-    relax_maker : Maker | None
-        Maker used to perform relaxations of the enumerated structures. VASP is selected
-        as the default DFT code (atomate2.vasp.jobs.RelaxMaker). If this field is None,
-        relaxations will be skipped (i.e., only static calculations are performed).
-    default_magmoms : dict | None
-        Optional default mapping of magnetic elements to their initial magnetic moments
-        in μB. Generally these are chosen to be high-spin, since they can relax to a
-        low-spin configuration during a DFT electronic configuration. If None, will use
-        the default values provided in pymatgen/analysis/magnetism/default_magmoms.yaml.
-    strategies : tuple[str]
-        Different ordering strategies to use. Choose from ferromagnetic,
-        antiferromagnetic, antiferromagnetic_by_motif, ferrimagnetic_by_motif,
-        ferrimagnetic_by_species, or nonmagnetic. Here, "motif", means to use a
-        different ordering parameter for symmetry inequivalent sites.
-    automatic : bool
-        If True, will automatically choose sensible strategies. Defaults to True.
-    truncate_by_symmetry : bool
-        If True, will remove very unsymmetrical orderings that are likely physically
-        implausible. Defaults to True.
-    transformation_kwargs : dict | None
-        Keyword arguments provided to MagOrderingTransformation in pymatgen. Defaults to
-        None.
-    """
 
     name: str = "magnetic_orderings"
     static_maker: Maker = field(

@@ -1,4 +1,3 @@
-"""Utilities for testing LOBSTER calculations."""
 
 from __future__ import annotations
 
@@ -26,16 +25,7 @@ _FAKE_RUN_LOBSTER_KWARGS: dict[str, dict[str, Sequence]] = {}
 
 @pytest.fixture(scope="session")
 def lobster_test_dir(test_dir: str | Path) -> Path:
-    """Fixture to provide the test directory for LOBSTER tests.
-
-    Args:
-        test_dir: The base test directory.
-
-    Returns
-    -------
-        Path: The test directory for LOBSTER tests.
-    """
-    return Path(test_dir) / "lobster"
+    pass
 
 
 def monkeypatch_lobster(
@@ -99,22 +89,10 @@ def monkeypatch_lobster(
             The directory containing reference files for LOBSTER tests.
     """
 
-    def mock_run_lobster(*_args, **_kwargs) -> None:
-        from jobflow import CURRENT_JOB
-
-        name = CURRENT_JOB.job.name
-        ref_path = lobster_test_dir / _LOBS_REF_PATHS[name]
-        fake_run_lobster(ref_path, **_FAKE_RUN_LOBSTER_KWARGS.get(name, {}))
 
     monkeypatch.setattr(atomate2.lobster.run, "run_lobster", mock_run_lobster)
     monkeypatch.setattr(atomate2.lobster.jobs, "run_lobster", mock_run_lobster)
 
-    def _run(
-        ref_paths: dict[str, str | Path],
-        fake_run_lobster_kwargs: dict[str, dict[str, Sequence]],
-    ) -> None:
-        _LOBS_REF_PATHS.update(ref_paths)
-        _FAKE_RUN_LOBSTER_KWARGS.update(fake_run_lobster_kwargs)
 
     yield _run
 
@@ -146,11 +124,9 @@ def fake_run_lobster(
     logger.info("Running fake LOBSTER.")
     ref_path = Path(ref_path)
 
-    # Checks if DFT files have been copied
     for file in check_dft_inputs:
         Path(file).exists()
     logger.info("Verified copying of VASP files successfully")
-    # zipped or not zipped?
     if "lobsterin" in check_lobster_inputs:
         verify_inputs(ref_path, lobsterin_settings)
 
@@ -158,7 +134,6 @@ def fake_run_lobster(
 
     copy_lobster_outputs(ref_path)
 
-    # pretend to run LOBSTER by copying pre-generated outputs from reference dir
     logger.info("ran fake LOBSTER, generated outputs")
 
 
@@ -171,7 +146,6 @@ def verify_inputs(ref_path: str | Path, lobsterin_settings: Sequence[str]) -> No
     """
     user = Lobsterin.from_file("lobsterin")
 
-    # Check lobsterin
     ref = Lobsterin.from_file(Path(ref_path) / "inputs" / "lobsterin")
 
     for key in lobsterin_settings:

@@ -1,4 +1,3 @@
-"""Flows for calculating elastic constants."""
 
 from __future__ import annotations
 
@@ -17,7 +16,6 @@ if TYPE_CHECKING:
 
     from atomate2.forcefields import MLFF
 
-# default options for the forcefield makers in ElasticMaker
 _DEFAULT_RELAX_KWARGS: dict[str, Any] = {
     "force_field_name": "CHGNet",
     "relax_kwargs": {"fmax": 0.00001},
@@ -27,50 +25,6 @@ _DEFAULT_RELAX_KWARGS: dict[str, Any] = {
 
 @dataclass
 class ElasticMaker(BaseElasticMaker):
-    """
-    Maker to calculate elastic constants.
-
-    Calculate the elastic constant of a material. Initially, a tight structural
-    relaxation is performed to obtain the structure in a state of approximately zero
-    stress. Subsequently, perturbations are applied to the lattice vectors and the
-    resulting stress tensor is calculated from DFT, while allowing for relaxation of the
-    ionic degrees of freedom. Finally, constitutive relations from linear elasticity,
-    relating stress and strain, are employed to fit the full 6x6 elastic tensor. From
-    this, aggregate properties such as Voigt and Reuss bounds on the bulk and shear
-    moduli are derived.
-
-    .. Note::
-        It is heavily recommended to symmetrize the structure before passing it to
-        this flow. Otherwise, the symmetry reduction routines will not be as
-        effective at reducing the total number of deformations needed.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    order : int
-        Order of the tensor expansion to be determined. Can be either 2 or 3.
-    sym_reduce : bool
-        Whether to reduce the number of deformations using symmetry.
-    symprec : float
-        Symmetry precision to use in the reduction of symmetry.
-    bulk_relax_maker : .ForceFieldRelaxMaker or None
-        A maker to perform a tight relaxation on the bulk. Set to ``None`` to skip the
-        bulk relaxation.
-    max_failed_deformations: int or float
-        Maximum number of deformations allowed to fail to proceed with the fitting
-        of the elastic tensor. If an int the absolute number of deformations. If
-        a float between 0 an 1 the maximum fraction of deformations. If None any
-        number of deformations allowed.
-    elastic_relax_maker : .ForceFieldRelaxMaker
-        Maker used to generate elastic relaxations.
-    generate_elastic_deformations_kwargs : dict
-        Keyword arguments passed to :obj:`generate_elastic_deformations`.
-    fit_elastic_tensor_kwargs : dict
-        Keyword arguments passed to :obj:`fit_elastic_tensor`.
-    task_document_kwargs : dict
-        Additional keyword args passed to :obj:`.ElasticDocument.from_stresses()`.
-    """
 
     name: str = "elastic"
     order: int = 2
@@ -110,73 +64,4 @@ class ElasticMaker(BaseElasticMaker):
         relax_initial_structure: bool = True,
         **kwargs,
     ) -> Self:
-        """
-        Create an elastic flow from a forcefield name.
-
-        Parameters
-        ----------
-        force_field_name : str or .MLFF or dict
-            The name of the force field.
-        calculator_kwargs : dict or None (default)
-            calculator_kwargs to pass to `ForceFieldRelaxMaker`.
-        relax_initial_structure : bool = True (default)
-            Whether to relax the structure before computing
-            the elastic tensor.
-        **kwargs
-            Additional kwargs to pass to ElasticMaker.
-
-        Returns
-        -------
-        ElasticMaker
-        """
-        warnings.warn(
-            "Fixed symmetry relaxations are automatically enabled "
-            "to improve elastic tensor stability. To disable this "
-            "specify ForceFieldRelaxMaker objects explicitly. ",
-            category=UserWarning,
-            stacklevel=2,
-        )
-
-        if (mlff_kwargs := kwargs.pop("mlff_kwargs", None)) is not None:
-            warnings.warn(
-                "`mlff_kwargs` has been marked for deprecation. "
-                "To specify `calculator_kwargs`, use that kwarg instead. "
-                "To obtain finer control over the makers used, specify them "
-                "directly in `ElasticMaker`.",
-                category=UserWarning,
-                stacklevel=2,
-            )
-            if mlff_kwargs.get("calculator_kwargs"):
-                if calculator_kwargs:
-                    raise ValueError(
-                        "You have specified both `calculator_kwargs` and "
-                        "`mlff_kwargs`. `calculator_kwargs` is preferred, and "
-                        "`mlff_kwargs` may not be supported in the future."
-                    )
-                calculator_kwargs = mlff_kwargs.pop("calculator_kwargs", {})
-
-        default_kwargs: dict[str, Any] = {
-            **_DEFAULT_RELAX_KWARGS,
-            **(mlff_kwargs or {}),
-            "force_field_name": force_field_name,
-            "calculator_kwargs": calculator_kwargs or {},
-        }
-
-        elastic_relax_maker = ForceFieldRelaxMaker(
-            relax_cell=False,
-            **default_kwargs,
-        )
-
-        return cls(
-            name=f"{elastic_relax_maker.mlff.name} elastic",
-            **kwargs,
-            bulk_relax_maker=(
-                ForceFieldRelaxMaker(
-                    relax_cell=True,
-                    **default_kwargs,
-                )
-                if relax_initial_structure
-                else None
-            ),
-            elastic_relax_maker=elastic_relax_maker,
-        )
+        pass

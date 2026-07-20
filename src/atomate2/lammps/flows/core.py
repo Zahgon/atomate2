@@ -1,4 +1,3 @@
-"""Core LAMMPS flows."""
 
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -12,7 +11,6 @@ from atomate2.lammps.jobs.core import LammpsNPTMaker, LammpsNVTMaker
 
 @dataclass
 class MeltQuenchThermalizeMaker(Maker):
-    """Melt -> Quench -> Thermalize flow maker."""
 
     name: str = "melt-quench-thermalize"
     melt_maker: BaseLammpsMaker = field(default_factory=LammpsNPTMaker)
@@ -42,38 +40,4 @@ class MeltQuenchThermalizeMaker(Maker):
         n_steps_quench: int = 10000,
         n_steps_thermalize: int = 10000,
     ) -> "MeltQuenchThermalizeMaker":
-        """Make a melt-quench-thermalize flow maker from temperature and steps."""
-        melt_maker = deepcopy(npt_maker)
-        melt_maker.name = "melt"
-        melt_maker.input_set_generator.update_settings(
-            {
-                "start_temp": start_temperature,
-                "end_temp": melt_temperature,
-                "nsteps": n_steps_melt,
-            }
-        )
-
-        quench_maker = deepcopy(npt_maker)
-        quench_maker.name = "quench"
-        quench_maker.input_set_generator.update_settings(
-            {
-                "start_temp": melt_temperature,
-                "end_temp": quench_temperature,
-                "nsteps": n_steps_quench,
-            }
-        )
-
-        thermalize_maker = deepcopy(nvt_maker) if nvt_maker else deepcopy(npt_maker)
-        thermalize_maker.name = "thermalize"
-        thermalize_maker.input_set_generator.update_settings(
-            {
-                "start_temp": quench_temperature,
-                "end_temp": quench_temperature,
-                "nsteps": n_steps_thermalize,
-            }
-        )
-        return cls(
-            melt_maker=melt_maker,
-            quench_maker=quench_maker,
-            thermalize_maker=thermalize_maker,
-        )
+        pass

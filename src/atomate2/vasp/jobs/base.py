@@ -1,4 +1,3 @@
-"""Definition of base VASP job maker."""
 
 from __future__ import annotations
 
@@ -49,11 +48,8 @@ _DATA_OBJECTS = [
 ]
 
 if SETTINGS.VASP_USE_EMMET_MODELS:
-    # Because the emmet-core models deserialize to JSON
-    # on model_dump, we just pass field names here, not object types
     _DATA_OBJECTS.extend([f.value for f in VaspObject])
 else:
-    # Store pymatgen objects
     _DATA_OBJECTS.extend(
         [
             BandStructure,
@@ -67,8 +63,6 @@ else:
         ]
     )
 
-# Input files. Partially from https://www.vasp.at/wiki/index.php/Category:Input_files
-# Exclude those that are also outputs
 _INPUT_FILES = [
     "DYNMATFULL",
     "ICONST",
@@ -83,7 +77,6 @@ _INPUT_FILES = [
     "QPOINTS",
 ]
 
-# Output files. Partially from https://www.vasp.at/wiki/index.php/Category:Output_files
 _OUTPUT_FILES = [
     "AECCAR0",
     "AECCAR1",
@@ -122,7 +115,6 @@ _OUTPUT_FILES = [
     "XDATCAR",
 ]
 
-# Files to zip: inputs, outputs and additionally generated files
 _FILES_TO_ZIP = (
     _INPUT_FILES
     + _OUTPUT_FILES
@@ -172,54 +164,6 @@ def vasp_job(method: Callable) -> job:
 @due.dcite(Doi("10.1103/PhysRevB.54.11169"), description="VASP: self-consistency")
 @dataclass
 class BaseVaspMaker(Maker):
-    """
-    Base VASP job maker.
-
-    To modify settings relevant to `custodian`, use `run_vasp_kwargs`:
-    ```
-    run_vasp_kwargs = {
-        "custodian_kwargs": {
-            "max_errors_per_job": 5,
-            "gzipped_output": True,
-        }
-    }
-    ```
-    For other possible VASP run configurations, see `atomate2.vasp.run.run_vasp`.
-    For example, you can change which executable is used by setting
-    ```
-    run_vasp_kwargs["vasp_cmd"] = "/path/to/some/vasp/executable"
-    ```
-    or override the default choice of custodian handlers using the `"handlers"` kwarg:
-    ```
-    run_vasp_kwargs["handlers"] = [PositiveEnergyHandler]
-    ```
-
-    NB: You cannot set the following four fields using `custodian_kwargs`:
-    `handlers`, `jobs`, `validators`, `max_errors`, and `scratch_dir`.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .VaspInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_vasp_input_set`.
-    copy_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_vasp_outputs`.
-    run_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_vasp`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "base vasp job"
     input_set_generator: VaspInputGenerator = field(default_factory=VaspInputGenerator)
@@ -248,33 +192,26 @@ class BaseVaspMaker(Maker):
             Response: A response object containing the output, detours and stop
                 commands of the VASP run.
         """
-        # copy previous inputs
         from_prev = prev_dir is not None
         if prev_dir is not None:
             copy_vasp_outputs(prev_dir, **self.copy_vasp_kwargs)
 
         self.write_input_set_kwargs.setdefault("from_prev", from_prev)
 
-        # write vasp input files
         write_vasp_input_set(
             structure, self.input_set_generator, **self.write_input_set_kwargs
         )
 
-        # write any additional data
         for filename, data in self.write_additional_data.items():
             dumpfn(data, filename.replace(":", "."))
 
-        # run vasp
         run_vasp(**self.run_vasp_kwargs)
 
-        # parse vasp outputs
         task_doc = get_vasp_task_document(Path.cwd(), **self.task_document_kwargs)
         task_doc.task_label = self.name
 
-        # decide whether child jobs should proceed
         stop_children = should_stop_children(task_doc, **self.stop_children_kwargs)
 
-        # gzip folder
         gzip_output_folder(
             directory=Path.cwd(),
             setting=SETTINGS.VASP_ZIP_FILES,
@@ -311,16 +248,11 @@ def get_vasp_task_document(
                 stacklevel=1,
             )
     if SETTINGS.VASP_RUN_DDEC6:
-        # if VASP_RUN_DDEC6 is True but _CHARGEMOL_EXE_EXISTS is False, just silently
-        # skip running DDEC6
         run_ddec6: bool | str = _CHARGEMOL_EXE_EXISTS
         if run_ddec6 and isinstance(SETTINGS.DDEC6_ATOMIC_DENSITIES_DIR, str):
-            # if DDEC6_ATOMIC_DENSITIES_DIR is a string and directory at that path
-            # exists, use as path to the atomic densities
             if Path(SETTINGS.DDEC6_ATOMIC_DENSITIES_DIR).is_dir():
                 run_ddec6 = SETTINGS.DDEC6_ATOMIC_DENSITIES_DIR
             else:
-                # if the directory doesn't exist, warn the user and skip running DDEC6
                 warnings.warn(
                     f"{SETTINGS.DDEC6_ATOMIC_DENSITIES_DIR=} does not exist, skipping "
                     "DDEC6",

@@ -1,10 +1,3 @@
-"""
-Module defining Materials Project workflows.
-
-Reference: https://doi.org/10.1103/PhysRevMaterials.6.013801
-
-In case of questions, consult @Andrew-S-Rosen, @esoteric-ephemera or @janosh.
-"""
 
 from __future__ import annotations
 
@@ -48,17 +41,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class MPGGADoubleRelaxMaker(DoubleRelaxMaker):
-    """MP GGA double relaxation workflow.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker1 : .BaseVaspMaker
-        Maker to generate the first relaxation.
-    relax_maker2 : .BaseVaspMaker
-        Maker to generate the second relaxation.
-    """
 
     name: str = "MP GGA double relax"
     relax_maker1: Maker | None = field(default_factory=MPGGARelaxMaker)
@@ -71,17 +53,6 @@ class MPGGADoubleRelaxMaker(DoubleRelaxMaker):
 
 @dataclass
 class MPMetaGGADoubleRelaxMaker(DoubleRelaxMaker):
-    """MP meta-GGA double relaxation workflow.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker1 : .BaseVaspMaker
-        Maker to generate the first relaxation.
-    relax_maker2 : .BaseVaspMaker
-        Maker to generate the second relaxation.
-    """
 
     name: str = "MP meta-GGA double relax"
     relax_maker1: Maker | None = field(default_factory=MPPreRelaxMaker)
@@ -94,20 +65,6 @@ class MPMetaGGADoubleRelaxMaker(DoubleRelaxMaker):
 
 @dataclass
 class MPGGADoubleRelaxStaticMaker(Maker):
-    """
-    Maker to perform a VASP GGA relaxation workflow with MP settings.
-
-    Only the middle job performing a PBE relaxation is non-optional.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker : .BaseVaspMaker
-        Maker to generate the relaxation.
-    static_maker : .BaseVaspMaker
-        Maker to generate the static calculation before the relaxation.
-    """
 
     name: str = "MP GGA relax"
     relax_maker: Maker = field(default_factory=MPGGADoubleRelaxMaker)
@@ -138,7 +95,6 @@ class MPGGADoubleRelaxStaticMaker(Maker):
         jobs = [relax_flow]
 
         if self.static_maker:
-            # Run a static calculation
             static_job = self.static_maker.make(
                 structure=output.structure, prev_dir=output.dir_name
             )
@@ -150,20 +106,6 @@ class MPGGADoubleRelaxStaticMaker(Maker):
 
 @dataclass
 class MPMetaGGADoubleRelaxStaticMaker(MPGGADoubleRelaxMaker):
-    """
-    Flow with optional pre-relax and final static jobs.
-
-    Only the middle job performing a meta-GGA relaxation is non-optional.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker : .BaseVaspMaker
-        Maker to generate the relaxation.
-    static_maker : .BaseVaspMaker
-        Maker to generate the static calculation before the relaxation.
-    """
 
     name: str = "MP meta-GGA relax"
     relax_maker: Maker = field(default_factory=MPMetaGGADoubleRelaxMaker)
@@ -194,7 +136,6 @@ class MPMetaGGADoubleRelaxStaticMaker(MPGGADoubleRelaxMaker):
         output = relax_flow.output
         jobs = [relax_flow]
         if self.static_maker:
-            # Run a static calculation (typically r2SCAN)
             static_job = self.static_maker.make(
                 structure=output.structure, prev_dir=output.dir_name
             )
@@ -206,17 +147,6 @@ class MPMetaGGADoubleRelaxStaticMaker(MPGGADoubleRelaxMaker):
 
 @dataclass
 class MP24DoubleRelaxMaker(DoubleRelaxMaker):
-    """MP24 PBEsol + r2SCAN double relaxation workflow.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker1 : .BaseVaspMaker
-        Maker to generate the first relaxation.
-    relax_maker2 : .BaseVaspMaker
-        Maker to generate the second relaxation.
-    """
 
     name: str = "MP24 double relax"
     relax_maker1: Maker | None = field(default_factory=MP24PreRelaxMaker)
@@ -229,23 +159,6 @@ class MP24DoubleRelaxMaker(DoubleRelaxMaker):
 
 @dataclass
 class MP24DoubleRelaxStaticMaker(Maker):
-    """MP24 workflow to relax a structure with r2SCAN.
-
-    Optionally, files can be automatically cleaned following completion
-    of the workflow. By default, WAVECAR files are removed.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker : .BaseVaspMaker
-        Maker to generate the relaxation.
-    static_maker : .BaseVaspMaker
-        Maker to generate the static calculation before the relaxation.
-    clean_files : Sequence of str or None
-        If a list of strings, names of files to remove following the workflow.
-        By default, this removes the WAVECAR files (gzipped or not).
-    """
 
     name: str = "MP24 r2SCAN workflow"
     relax_maker: Maker = field(default_factory=MP24DoubleRelaxMaker)
@@ -293,42 +206,8 @@ class MP24DoubleRelaxStaticMaker(Maker):
         return Flow(jobs=jobs, output=static_job.output, name=self.name)
 
 
-# update potcars to 54, use correct W potcar
-# use staticmaker for compatibility
 @dataclass
 class MPVaspLobsterMaker(VaspLobsterMaker):
-    """
-    Maker to perform a Lobster computation.
-
-    The calculations performed are:
-
-    1. Optional optimization.
-    2. Static calculation with ISYM=0.
-    3. Several Lobster computations testing several basis sets are performed.
-
-    .. Note::
-
-        The basis sets can only be changed with yaml files.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker : .BaseVaspMaker or None
-        A maker to perform a relaxation on the bulk. Set to ``None`` to skip the
-        bulk relaxation.
-    lobster_static_maker : .BaseVaspMaker
-        A maker to perform the computation of the wavefunction before the static
-        run. Cannot be skipped. It can be LOBSTERUNIFORM or LobsterStaticMaker()
-    lobster_maker : .LobsterMaker
-        A maker to perform the Lobster run.
-    delete_wavecars : bool
-        If true, all WAVECARs will be deleted after the run.
-    address_min_basis : str
-        A path to a yaml file including basis set information.
-    address_max_basis : str
-       A path to a yaml file including basis set information.
-    """
 
     name: str = "lobster"
     relax_maker: BaseVaspMaker | None = field(default_factory=MPGGADoubleRelaxMaker)

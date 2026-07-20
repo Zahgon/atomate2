@@ -1,4 +1,3 @@
-"""Schemas for FHI-aims calculation objects."""
 
 from __future__ import annotations
 
@@ -38,14 +37,12 @@ def ensure_stress_full(input_stress: Sequence[float] | Matrix3D) -> Matrix3D:
 
 
 class TaskState(ValueEnum):
-    """FHI-aims calculation state."""
 
     SUCCESS = "successful"
     FAILED = "failed"
 
 
 class AimsObject(ValueEnum):
-    """Types of FHI-aims data objects."""
 
     DOS = "dos"
     BAND_STRUCTURE = "band_structure"
@@ -55,37 +52,6 @@ class AimsObject(ValueEnum):
 
 
 class CalculationOutput(BaseModel):
-    """Document defining FHI-aims calculation outputs.
-
-    Parameters
-    ----------
-    energy: float
-        The final total DFT energy for the calculation
-    energy_per_atom: float
-        The final DFT energy per atom for the calculation
-    structure: Structure or Molecule
-        The final pymatgen Structure or Molecule of the system
-    efermi: float
-        The Fermi level from the calculation in eV
-    forces: List[Vector3D]
-        Forces acting on each atom
-    all_forces: List[List[Vector3D]]
-        Forces acting on each atom for each structure in the output file
-    stress: Matrix3D
-        The stress on the cell
-    stresses: List[Matrix3D]
-        The atomic virial stresses
-    is_metal: bool
-        Whether the system is metallic
-    bandgap: float
-        The band gap from the calculation in eV
-    cbm: float
-        The conduction band minimum in eV (if system is not metallic
-    vbm: float
-        The valence band maximum in eV (if system is not metallic)
-    atomic_steps: list[Structure or Molecule]
-        Structures for each ionic step"
-    """
 
     energy: float = Field(
         None, description="The final total DFT energy for the calculation"
@@ -136,7 +102,6 @@ class CalculationOutput(BaseModel):
     def from_aims_output(
         cls,
         output: AimsOutput,  # Must use auto_load kwarg when passed
-        # store_trajectory: bool = False,
     ) -> Self:
         """Create an FHI-aims output document from FHI-aims outputs.
 
@@ -189,15 +154,6 @@ class CalculationOutput(BaseModel):
 
 
 class CalculationInput(BaseModel):
-    """The FHI-aims Calculation input doc.
-
-    Parameters
-    ----------
-    structure: Structure or Molecule
-        The input pymatgen Structure or Molecule of the system
-    parameters: dict[str, Any]
-        The parameters passed in the control.in file
-    """
 
     structure: Structure | Molecule = Field(
         None, description="The input structure object"
@@ -208,26 +164,6 @@ class CalculationInput(BaseModel):
 
 
 class Calculation(BaseModel):
-    """Full FHI-aims calculation inputs and outputs.
-
-    Parameters
-    ----------
-    dir_name: str
-        The directory for this FHI-aims calculation
-    aims_version: str
-        FHI-aims version used to perform the calculation
-    has_aims_completed: .TaskState
-        Whether FHI-aims completed the calculation successfully
-    output: .CalculationOutput
-        The FHI-aims calculation output
-    input: .CalculationInput
-        The FHI-aims calculation input
-    completed_at: str
-        Timestamp for when the calculation was completed
-    output_file_paths: Dict[str, str]
-        Paths (relative to dir_name) of the FHI-aims output files
-        associated with this calculation
-    """
 
     dir_name: str = Field(
         None, description="The directory for this FHI-aims calculation"

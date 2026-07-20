@@ -1,4 +1,3 @@
-"""Core definitions of a CP2K calculation documents."""
 
 import logging
 import os
@@ -32,7 +31,6 @@ from atomate2.cp2k.schemas.calc_types import (
 
 logger = logging.getLogger(__name__)
 
-# Can be expanded if support for other volumetric files is added
 __is_stored_in_Ha__ = ["v_hartree"]
 
 
@@ -40,14 +38,12 @@ _BADER_EXE_EXISTS = bool(which("bader") or which("bader.exe"))
 
 
 class Status(ValueEnum):
-    """CP2K calculation state."""
 
     SUCCESS = "successful"
     FAILED = "failed"
 
 
 class Cp2kObject(ValueEnum):
-    """Types of CP2K data objects."""
 
     DOS = "dos"
     BANDSTRUCTURE = "band_structure"
@@ -61,7 +57,6 @@ class Cp2kObject(ValueEnum):
 
 
 class CalculationInput(BaseModel):
-    """Summary of inputs for a CP2K calculation."""
 
     structure: Union[Structure, Molecule] = Field(
         None, description="The input structure/molecule object"
@@ -88,19 +83,12 @@ class CalculationInput(BaseModel):
     @field_validator("atomic_kind_info", mode="before")
     @classmethod
     def remove_unnecessary(cls, atomic_kind_info: dict) -> dict:
-        """Remove unnecessary entry from atomic_kind_info."""
-        for key, value in atomic_kind_info.items():
-            if "total_pseudopotential_energy" in value:
-                del atomic_kind_info[key]["total_pseudopotential_energy"]
-        return atomic_kind_info
+        pass
 
     @field_validator("dft", mode="before")
     @classmethod
     def cleanup_dft(cls, dft: dict) -> dict:
-        """Convert UKS strings to UKS=True."""
-        if any(v.upper() == "UKS" for v in dft.values()):
-            dft["UKS"] = True
-        return dft
+        pass
 
     @classmethod
     def from_cp2k_output(cls, output: Cp2kOutput) -> Self:
@@ -115,7 +103,6 @@ class CalculationInput(BaseModel):
 
 
 class RunStatistics(BaseModel):
-    """Summary of the run statistics for a CP2K calculation."""
 
     total_time: float = Field(0, description="The total CPU time for this calculation")
 
@@ -133,7 +120,6 @@ class RunStatistics(BaseModel):
         RunStatistics
             The run statistics.
         """
-        # rename these statistics
         run_stats = {}
         output.parse_timing()
         run_stats["total_time"] = output.timing["CP2K"]["total_time"]["maximum"]
@@ -141,7 +127,6 @@ class RunStatistics(BaseModel):
 
 
 class CalculationOutput(BaseModel):
-    """Document defining CP2K calculation outputs."""
 
     energy: float = Field(
         None, description="The final total DFT energy for the calculation"
@@ -250,7 +235,6 @@ class CalculationOutput(BaseModel):
 
 
 class Calculation(BaseModel):
-    """Full CP2K calculation inputs and outputs."""
 
     dir_name: str = Field(None, description="The directory for this CP2K calculation")
     cp2k_version: str = Field(
@@ -391,8 +375,6 @@ class Calculation(BaseModel):
         bader = None
         if run_bader and Cp2kObject.ELECTRON_DENSITY in output_file_paths:
             ba = BaderAnalysis(cube_filename=Cp2kObject.ELECTRON_DENSITY)
-            # TODO vasp version calls bader_analysis_from_path but cp2k
-            # cube files don't support that yet, do it manually
             bader = {
                 "min_dist": [dct["min_dist"] for dct in ba.data],
                 "charge": [dct["charge"] for dct in ba.data],
@@ -531,11 +513,6 @@ def _get_volumetric_data(
     return volumetric_data
 
 
-# TODO As written, this will only get the complete dos if it is available.
-# cp2k can only generate the complete DOS for gamma-point only calculations
-# and it has to be requested (not default). Should this method grab overall
-# dos / elemental project dos if the complete dos is not available, or stick
-# to grabbing the complete dos?
 def _parse_dos(parse_dos: Union[str, bool], cp2k_output: Cp2kOutput) -> Dos | None:
     """
     Parse DOS outputs from cp2k calculation.

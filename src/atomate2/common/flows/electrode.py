@@ -1,4 +1,3 @@
-"""Flow for electrode analysis."""
 
 from __future__ import annotations
 
@@ -34,47 +33,6 @@ __email__ = "jmmshn@gmail.com"
 
 @dataclass
 class ElectrodeInsertionMaker(Maker, ABC):
-    """Attempt ion insertion into a structure.
-
-    The basic unit for cation insertion is:
-        [get_stable_inserted_structure]:
-            (static) -> (chgcar analysis) ->
-            N x (relax) -> (return best structure)
-
-    The workflow is:
-        [relax structure]
-        [get_stable_inserted_structure]
-        [get_stable_inserted_structure]
-        [get_stable_inserted_structure]
-        ... until the insertion is no longer topotactic.
-
-    This workflow requires the users to provide the following functions:
-        self.get_charge_density(task_doc: TaskDoc):
-            Get the charge density of a TaskDoc output from a calculation.
-        self.update_static_maker():
-            Ensure that the static maker will store the desired data.
-
-    If you use this workflow please cite the following paper:
-        Shen, J.-X., Horton, M., & Persson, K. A. (2020).
-        A charge-density-based general cation insertion algorithm for
-        generating new Li-ion cathode materials.
-        npj Computational Materials, 6(161), 1—7.
-        doi: 10.1038/s41524-020-00422-3
-
-    Attributes
-    ----------
-    name: str
-        The name of the flow created by this maker.
-    relax_maker: RelaxMaker
-        A maker to perform relaxation calculations.
-    bulk_relax_maker: Maker
-        A separate maker to perform the first bulk relaxation calculation.
-        If None, the relax_maker will be used.
-    static_maker: Maker
-        A maker to perform static calculations.
-    structure_matcher: StructureMatcher
-        The structure matcher to use to determine if additional insertion is needed.
-    """
 
     relax_maker: Maker
     static_maker: Maker
@@ -115,7 +73,6 @@ class ElectrodeInsertionMaker(Maker, ABC):
         -------
             Flow for ion insertion.
         """
-        # First relax the structure
         if self.bulk_relax_maker:
             relax = self.bulk_relax_maker.make(structure)
         else:
@@ -124,9 +81,7 @@ class ElectrodeInsertionMaker(Maker, ABC):
         _shown_steps = str(n_steps) if n_steps else "inf"
         relax.append_name(f" 0/{_shown_steps}")
 
-        # add ignored_species to the structure matcher
         sm = _add_ignored_species(self.structure_matcher, inserted_element)
-        # Get the inserted structure
         new_entries_job = get_stable_inserted_results(
             structure=relax.output.structure,
             inserted_element=inserted_element,

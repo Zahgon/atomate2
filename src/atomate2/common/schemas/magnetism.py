@@ -1,4 +1,3 @@
-"""Schemas for magnetic ordering calculations."""
 
 from __future__ import annotations
 
@@ -13,11 +12,6 @@ from pymatgen.core.structure import Structure
 
 
 class MagneticOrderingInput(BaseModel):
-    """Defines the input structure/ordering for a magnetic ordering calculation.
-
-    This is embedded in the MagneticOrderingOutput and MagneticOrderingRelaxation
-    documents.
-    """
 
     structure: Structure | None = Field(None, description="Input structure")
     ordering: Ordering | None = Field(
@@ -34,10 +28,6 @@ class MagneticOrderingInput(BaseModel):
 
 
 class MagneticOrderingRelaxation(BaseModel):
-    """Defines the relaxation information for a magnetic ordering calculation.
-
-    This is embedded within the MagneticOrderingOutput.
-    """
 
     uuid: str | None = Field(None, description="Unique ID of the calculation.")
     dir_name: str | None = Field(None, description="Directory of the calculation.")
@@ -132,12 +122,6 @@ class MagneticOrderingRelaxation(BaseModel):
 
 
 class MagneticOrderingOutput(BaseModel):
-    """Defines the output for a *static* magnetic ordering calculation.
-
-    This is used within the construction of the MagneticOrderingDocument. If a
-    relaxation was performed, this information will be stored within the relax_output
-    field.
-    """
 
     uuid: str | None = Field(None, description="Unique ID of the calculation.")
     dir_name: str | None = Field(None, description="Directory of the calculation.")
@@ -271,11 +255,6 @@ class MagneticOrderingOutput(BaseModel):
 
 
 class MagneticOrderingsDocument(BaseModel):
-    """Final document containing information about calculated magnetic orderings.
-
-    Includes description of the ground state ordering. This document is returned by the
-    MagneticOrderingsBuilder corresponding to your DFT code.
-    """
 
     formula: str | None = Field(
         None,
@@ -389,13 +368,11 @@ def _compare_ordering_and_symmetry(
 
     This is especially useful for debugging purposes.
     """
-    # process input structure
     input_analyzer = CollinearMagneticStructureAnalyzer(input_structure, threshold=0.61)
     input_ordering = input_analyzer.ordering
     input_magmoms = input_analyzer.magmoms
     input_symmetry = input_structure.get_space_group_info()[0]
 
-    # process output structure
     output_analyzer = CollinearMagneticStructureAnalyzer(
         output_structure, threshold=0.61
     )
@@ -409,7 +386,6 @@ def _compare_ordering_and_symmetry(
     total_magnetization_per_formula_unit = total_magnetization / num_formula_units
     total_magnetization_per_unit_volume = total_magnetization / output_structure.volume
 
-    # compare
     ordering_changed = not np.array_equal(
         np.sign(input_analyzer.magmoms), np.sign(output_magmoms)
     )

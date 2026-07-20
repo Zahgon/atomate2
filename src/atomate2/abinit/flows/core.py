@@ -1,4 +1,3 @@
-"""Core abinit flow makers."""
 
 from __future__ import annotations
 
@@ -24,21 +23,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class BandStructureMaker(Maker):
-    """
-    Maker to generate abinit band structures.
-
-    This is a static calculation followed by two non-self-consistent field
-    calculations, one uniform and one line mode.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    scf_maker : .BaseAbinitMaker
-        The maker to use for the static calculation.
-    bs_maker : .BaseAbinitMaker
-        The maker to use for the non-self-consistent field calculations.
-    """
 
     name: str = "band structure - dos"
     static_maker: BaseAbinitMaker = field(default_factory=StaticMaker)
@@ -84,16 +68,6 @@ class BandStructureMaker(Maker):
 
 @dataclass
 class RelaxFlowMaker(Maker):
-    """
-    Maker to generate a relaxation flow with abinit.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relaxation_makers : .BaseAbinitMaker
-        The maker or list of makers to use for the relaxation flow.
-    """
 
     name: str = "relaxation"
     relaxation_makers: list[Maker] = field(
@@ -133,7 +107,4 @@ class RelaxFlowMaker(Maker):
 
     @classmethod
     def ion_ioncell_relaxation(cls, *args, **kwargs) -> Flow:
-        """Create a double relaxation (ionic relaxation + full relaxation)."""
-        ion_rlx_maker = RelaxMaker.ionic_relaxation(*args, **kwargs)
-        ioncell_rlx_maker = RelaxMaker.full_relaxation(*args, **kwargs)
-        return cls(relaxation_makers=[ion_rlx_maker, ioncell_rlx_maker])
+        pass

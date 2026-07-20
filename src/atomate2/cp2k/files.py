@@ -1,4 +1,3 @@
-"""Functions for manipulating CP2K files."""
 
 from __future__ import annotations
 
@@ -64,7 +63,6 @@ def copy_cp2k_outputs(
     restart_file = None
     additional_cp2k_files = additional_cp2k_files or []
 
-    # find required files
     cp2k_output = Cp2kOutput(
         src_dir / get_zfile(directory_listing, "cp2k.out"), auto_load=False
     )
@@ -72,7 +70,6 @@ def copy_cp2k_outputs(
     if restart_to_input:
         additional_cp2k_files += ("restart",)
 
-    # copy files
     additional_cp2k_files += ("wfn",)
     files = ["cp2k.inp", "cp2k.out"]
     for file in set(additional_cp2k_files):
@@ -101,7 +98,6 @@ def copy_cp2k_outputs(
         file_client=file_client,
     )
 
-    # rename files to remove relax extension
     if relax_ext:
         files_to_rename = {
             file.name.replace(".gz", ""): file.name.replace(relax_ext, "").replace(

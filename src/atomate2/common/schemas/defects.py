@@ -1,4 +1,3 @@
-"""General schemas for defect workflow outputs."""
 
 import logging
 from collections.abc import Callable, Sequence
@@ -18,12 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 class FormationEnergyDiagramDocument(BaseModel):
-    """A document for storing a formation energy diagram.
-
-    Basically a pydantic version of the `FormationEnergyDiagram` dataclass with some
-    additional data fields. The `pd_entries` field is now optional since the workflow
-    will not necessarily have all the entries in the phase diagram computed.
-    """
 
     bulk_entry: ComputedStructureEntry | None = Field(
         None,
@@ -82,51 +75,16 @@ class FormationEnergyDiagramDocument(BaseModel):
         fed: FormationEnergyDiagram,
         **kwargs,
     ) -> Self:
-        """Create a document from a `FormationEnergyDiagram` object.
-
-        Args:
-            fed: The `FormationEnergyDiagram` object.
-            kwargs: Additional keyword arguments to pass to the document.
-        """
-        defect = fed.defect_entries[0].defect
-        return cls(
-            defect=defect,
-            bulk_entry=fed.bulk_entry,
-            defect_entries=fed.defect_entries,
-            vbm=fed.vbm,
-            band_gap=fed.band_gap,
-            pd_entries=fed.pd_entries,
-            inc_inf_values=fed.inc_inf_values,
-            **kwargs,
-        )
+        pass
 
     def as_formation_energy_diagram(
         self,
         pd_entries: list[ComputedEntry] | None = None,
     ) -> FormationEnergyDiagram:
-        """Create a `FormationEnergyDiagram` object from the document.
-
-        Since the `pd_entries` field is optional, this method allows the user
-        to pass in the phase diagram entries if they are not stored in this document.
-
-        Args:
-            pd_entries: The entries used to construct the phase diagram. If None,
-            the `pd_entries` field of the document will be used.
-        """
-        if pd_entries is None:
-            pd_entries = self.pd_entries
-        return FormationEnergyDiagram(
-            bulk_entry=self.bulk_entry,
-            defect_entries=self.defect_entries,
-            vbm=self.vbm,
-            band_gap=self.band_gap,
-            pd_entries=pd_entries,
-            inc_inf_values=self.inc_inf_values,
-        )
+        pass
 
 
 class CCDDocument(BaseModel):
-    """Configuration-coordinate definition of configuration-coordinate diagram."""
 
     q1: int | None = Field(None, description="Charge state 1.")
     q2: int | None = Field(None, description="Charge state 2.")
@@ -239,11 +197,6 @@ class CCDDocument(BaseModel):
             UUID of relaxed calculation in charge state (q2).
         """
 
-        def get_cs_entry(
-            struct: Structure, energy: float, dir_name: str, uuid: str
-        ) -> ComputedStructureEntry:
-            data = {"dir_name": dir_name, "uuid": uuid}
-            return ComputedStructureEntry(structure=struct, energy=energy, data=data)
 
         entries1 = list(
             starmap(
@@ -292,10 +245,8 @@ class CCDDocument(BaseModel):
             raise ValueError(f"Could not find entry with UUID: {uuid}")
 
         def dQ_entries(e1: ComputedStructureEntry, e2: ComputedStructureEntry) -> float:  # noqa: N802
-            """Get the displacement between two entries."""
-            return get_dQ(e1.structure, e2.structure)
+            pass
 
-        # ensure the "dir_name" is provided for each entry
         if any(entry.data.get("dir_name") is None for entry in entries1 + entries2):
             raise ValueError("[dir_name] must be provided for all entries.")
 
@@ -340,21 +291,7 @@ class CCDDocument(BaseModel):
         )
 
     def get_taskdocs(self) -> tuple[list[TaskDoc], list[TaskDoc]]:
-        """Get the distorted task documents."""
-
-        def remove_host_name(dir_name: str) -> str:
-            return dir_name.rsplit(":", maxsplit=1)[-1]
-
-        static1_task_docs = [
-            TaskDoc.from_directory(remove_host_name(dir_name))
-            for dir_name in self.static_dirs1
-        ]
-        static2_task_docs = [
-            TaskDoc.from_directory(remove_host_name(dir_name))
-            for dir_name in self.static_dirs2
-        ]
-
-        return static1_task_docs, static2_task_docs
+        pass
 
 
 def sort_pos_dist(

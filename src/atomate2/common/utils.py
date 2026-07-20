@@ -1,4 +1,3 @@
-"""Common utilities for atomate2."""
 
 from __future__ import annotations
 
@@ -77,7 +76,6 @@ def get_supercell_matrix(
                 allow_orthorhombic=allow_orthorhombic,
             )
             transformation.apply_transformation(structure=structure)
-    # matrix from pymatgen has to be transposed
     return transformation.transformation_matrix.transpose().tolist()
 
 
@@ -168,15 +166,11 @@ def parse_transformations(
         except (KeyError, IndexError):
             pass
 
-    # We don't want to leave tags or authors in the
-    # transformations file because they'd be copied into
-    # every structure generated after this one.
     other_parameters = transformations.get("other_parameters", {})
     new_tags = other_parameters.pop("tags", None)
     new_author = other_parameters.pop("author", None)
 
     if "other_parameters" in transformations and not other_parameters:
-        # if dict is now empty remove it
         transformations.pop("other_parameters")
 
     return transformations, icsd_id, new_tags, new_author
@@ -187,10 +181,6 @@ def parse_additional_json(dir_name: Path) -> dict[str, Any]:
     additional_json = {}
     for filename in dir_name.glob("*.json*"):
         key = filename.name.split(".")[0]
-        # ignore FW.json(.gz) so jobflow doesn't try to parse prev_dir
-        # OutputReferences was causing atomate2 MP workflows to fail with ValueError:
-        # Could not resolve reference 7f5a7f14-464c-4a5b-85f9-8d11b595be3b not in store
-        # or cache contact @janosh in case of questions
         if key not in ("custodian", "transformations", "FW"):
             additional_json[key] = loadfn(filename, cls=None)
     return additional_json

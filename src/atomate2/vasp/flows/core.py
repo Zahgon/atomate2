@@ -1,4 +1,3 @@
-"""Core VASP flows."""
 
 from __future__ import annotations
 
@@ -30,18 +29,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class DoubleRelaxMaker(Maker):
-    """
-    Maker to perform a double VASP relaxation.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker1 : .BaseVaspMaker
-        Maker to use to generate the first relaxation.
-    relax_maker2 : .BaseVaspMaker
-        Maker to use to generate the second relaxation.
-    """
 
     name: str = "double relax"
     relax_maker1: BaseVaspMaker | None = field(default_factory=RelaxMaker)
@@ -64,7 +51,6 @@ class DoubleRelaxMaker(Maker):
         """
         jobs: list[Job] = []
         if self.relax_maker1:
-            # Run a pre-relaxation
             relax1 = self.relax_maker1.make(structure, prev_dir=prev_dir)
             relax1.append_name(" 1")
             jobs += [relax1]
@@ -94,23 +80,6 @@ class DoubleRelaxMaker(Maker):
 
 @dataclass
 class BandStructureMaker(Maker):
-    """
-    Maker to generate VASP band structures.
-
-    This is a static calculation followed by two non-self-consistent field calculations,
-    one uniform and one line mode.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    bandstructure_type : str
-        The type of band structure to generate. Options are "line", "uniform" or "both".
-    static_maker : .BaseVaspMaker
-        The maker to use for the static calculation.
-    bs_maker : .BaseVaspMaker
-        The maker to use for the non-self-consistent field calculations.
-    """
 
     name: str = "band structure"
     bandstructure_type: str = "both"
@@ -173,21 +142,6 @@ class BandStructureMaker(Maker):
 
 @dataclass
 class UniformBandStructureMaker(Maker):
-    """
-    Maker to generate uniform VASP band structure.
-
-    This is a static calculation followed by a uniform non-self-consistent field
-    calculations.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    static_maker : .BaseVaspMaker
-        The maker to use for the static calculation.
-    bs_maker : .BaseVaspMaker
-        The maker to use for the non-self-consistent field calculations.
-    """
 
     name: str = "uniform band structure"
     static_maker: BaseVaspMaker = field(default_factory=StaticMaker)
@@ -221,21 +175,6 @@ class UniformBandStructureMaker(Maker):
 
 @dataclass
 class LineModeBandStructureMaker(Maker):
-    """
-    Maker to generate line mode VASP band structure.
-
-    This is a static calculation followed by a line mode non-self-consistent field
-    calculations.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    static_maker : .BaseVaspMaker
-        The maker to use for the static calculation.
-    bs_maker : .BaseVaspMaker
-        The maker to use for the non-self-consistent field calculations.
-    """
 
     name: str = "line band structure"
     static_maker: BaseVaspMaker = field(default_factory=StaticMaker)
@@ -269,23 +208,6 @@ class LineModeBandStructureMaker(Maker):
 
 @dataclass
 class HSEBandStructureMaker(BandStructureMaker):
-    """
-    Maker to generate VASP HSE band structures.
-
-    This is an HSE06 static calculation followed by one HSE06 uniform calculation and
-    one HSE06 line mode calculation.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    bandstructure_type : str
-        The type of band structure to generate. Options are "line", "uniform" or "both".
-    static_maker : .BaseVaspMaker
-        The maker to use for the static calculation.
-    bs_maker : .BaseVaspMaker
-        The maker to use for the line and uniform band structure calculations.
-    """
 
     name: str = "hse band structure"
     bandstructure_type: str = "both"
@@ -295,20 +217,6 @@ class HSEBandStructureMaker(BandStructureMaker):
 
 @dataclass
 class HSEUniformBandStructureMaker(UniformBandStructureMaker):
-    """
-    Maker to generate VASP HSE uniform band structures.
-
-    This is an HSE06 static calculation followed by an HSE06 uniform calculation.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    static_maker : .BaseVaspMaker
-        The maker to use for the static calculation.
-    bs_maker : .BaseVaspMaker
-        The maker to use for the uniform band structure calculation.
-    """
 
     name: str = "hse band structure"
     static_maker: BaseVaspMaker = field(default_factory=HSEStaticMaker)
@@ -317,20 +225,6 @@ class HSEUniformBandStructureMaker(UniformBandStructureMaker):
 
 @dataclass
 class HSELineModeBandStructureMaker(LineModeBandStructureMaker):
-    """
-    Maker to generate VASP HSE line mode band structures.
-
-    This is an HSE06 static calculation followed by an HSE06 line mode calculation.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    static_maker : .BaseVaspMaker
-        The maker to use for the static calculation.
-    bs_maker : .BaseVaspMaker
-        The maker to use for the line-mode band structure calculation.
-    """
 
     name: str = "hse band structure"
     static_maker: BaseVaspMaker = field(default_factory=HSEStaticMaker)
@@ -339,20 +233,6 @@ class HSELineModeBandStructureMaker(LineModeBandStructureMaker):
 
 @dataclass
 class RelaxBandStructureMaker(Maker):
-    """
-    Maker to create a flow with a relaxation and then band structure calculations.
-
-    By default, this workflow generates relaxations using the :obj:`.DoubleRelaxMaker`.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker : .BaseVaspMaker
-        The maker to use for the static calculation.
-    band_structure_maker : .BaseVaspMaker
-        The maker to use for the line and uniform band structure calculations.
-    """
 
     name: str = "relax and band structure"
     relax_maker: BaseVaspMaker = field(default_factory=DoubleRelaxMaker)
@@ -383,28 +263,6 @@ class RelaxBandStructureMaker(Maker):
 
 @dataclass
 class OpticsMaker(Maker):
-    """
-    Maker to create optical absorption calculation VASP jobs.
-
-    This workflow contains an initial static calculation, and then a non-self-consistent
-    field calculation with LOPTICS set. The purpose of the static calculation is
-    i) to determine if the material needs magnetism set, and ii) to determine the total
-    number of bands (the second calculation contains 1.3 * number of bands as the
-    initial static) as often the highest bands are not properly converged in VASP.
-
-    .. Note::
-        The magnetism will be disabled in the non-self-consistent field calculation if
-        all MAGMOMs are less than 0.02.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    static_maker : .BaseVaspMaker
-        The maker to use for the static calculation.
-    band_structure_maker : .BaseVaspMaker
-        The maker to use for the uniform optics calculation.
-    """
 
     name: str = "static and optics"
     static_maker: BaseVaspMaker = field(default_factory=StaticMaker)
@@ -439,28 +297,6 @@ class OpticsMaker(Maker):
 
 @dataclass
 class HSEOpticsMaker(Maker):
-    """
-    Maker to create HSE optical absorption calculation VASP jobs.
-
-    This workflow contains an initial HSE static calculation, and then a uniform band
-    structure calculation with LOPTICS set. The purpose of the static calculation is
-    i) to determine if the material needs magnetism set and ii) to determine the total
-    number of bands (the second calculation contains 1.3 * number of bands as the
-    initial static) as often the highest bands are not properly converged in VASP.
-
-    .. Note::
-        The magnetism will be disabled in the uniform optics calculation if all MAGMOMs
-        are less than 0.02.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    static_maker : .BaseVaspMaker
-        The maker to use for the static calculation.
-    band_structure_maker : .BaseVaspMaker
-        The maker to use for the uniform optics calculation.
-    """
 
     name: str = "hse static and optics"
     static_maker: BaseVaspMaker = field(default_factory=HSEStaticMaker)

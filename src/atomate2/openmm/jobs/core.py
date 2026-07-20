@@ -1,4 +1,3 @@
-"""Core OpenMM jobs."""
 
 from __future__ import annotations
 
@@ -22,22 +21,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class EnergyMinimizationMaker(BaseOpenMMMaker):
-    """A maker class for performing energy minimization using OpenMM.
-
-    This class inherits from BaseOpenMMMaker, only new attributes are documented.
-    n_steps must be 0.
-
-    Attributes
-    ----------
-    name : str
-        The name of the energy minimization job.
-        Default is "energy minimization".
-    tolerance : float
-        The energy tolerance for minimization. Default is 10 kj/nm.
-    max_iterations : int
-        The maximum number of minimization iterations.
-        Default is 0, which means no maximum.
-    """
 
     name: str = "energy minimization"
     n_steps: int = 0
@@ -59,7 +42,6 @@ class EnergyMinimizationMaker(BaseOpenMMMaker):
         if self.n_steps != 0:
             raise ValueError("Energy minimization should have 0 steps.")
 
-        # Minimize the energy
         sim.minimizeEnergy(
             tolerance=self.tolerance * kilojoules_per_mole / nanometer,
             maxIterations=self.max_iterations,
@@ -90,22 +72,6 @@ class EnergyMinimizationMaker(BaseOpenMMMaker):
 
 @dataclass
 class NPTMaker(BaseOpenMMMaker):
-    """A maker class for performing NPT (isothermal-isobaric) simulations using OpenMM.
-
-    This class inherits from BaseOpenMMMaker, only new attributes are documented.
-
-    Attributes
-    ----------
-    name : str
-        The name of the NPT simulation job. Default is "npt simulation".
-    n_steps : int
-        The number of simulation steps. Default is 1,000,000.
-    pressure : float
-        The pressure of the simulation in atmospheres.
-        Default is 1 atm.
-    pressure_update_frequency : int
-        The number of steps between pressure update attempts.
-    """
 
     name: str = "npt simulation"
     n_steps: int = 1_000_000
@@ -123,7 +89,6 @@ class NPTMaker(BaseOpenMMMaker):
         sim : Simulation
             The OpenMM simulation object.
         """
-        # Add barostat to system
         context = sim.context
         system = context.getSystem()
 
@@ -135,30 +100,16 @@ class NPTMaker(BaseOpenMMMaker):
             )
         )
 
-        # Re-init the context after adding thermostat to System
         context.reinitialize(preserveState=True)
 
-        # Run the simulation
         sim.step(self.n_steps)
 
-        # Remove thermostat and update context
         system.removeForce(barostat_force_index)
         context.reinitialize(preserveState=True)
 
 
 @dataclass
 class NVTMaker(BaseOpenMMMaker):
-    """A maker class for performing NVT (canonical ensemble) simulations using OpenMM.
-
-    This class inherits from BaseOpenMMMaker, only new attributes are documented.
-
-    Attributes
-    ----------
-    name : str
-        The name of the NVT simulation job. Default is "nvt simulation".
-    n_steps : int
-        The number of simulation steps. Default is 1,000,000.
-    """
 
     name: str = "nvt simulation"
     n_steps: int = 1_000_000
@@ -171,31 +122,11 @@ class NVTMaker(BaseOpenMMMaker):
         sim : Simulation
             The OpenMM simulation object.
         """
-        # Run the simulation
         sim.step(self.n_steps)
 
 
 @dataclass
 class TempChangeMaker(BaseOpenMMMaker):
-    """A maker class for performing simulations with temperature changes using OpenMM.
-
-    This class inherits from BaseOpenMMMaker and provides
-    functionality for running simulations with temperature
-    changes using the OpenMM simulation package.
-
-    Attributes
-    ----------
-    name : str
-        The name of the temperature change job. Default is "temperature change".
-    n_steps : int
-        The total number of simulation steps. Default is 1000000.
-    temp_steps : Optional[int]
-        The number of steps over which the temperature is raised, by
-        default will be set to steps / 10000.
-    starting_temperature : Optional[float]
-        The starting temperature of the simulation.
-        If not provided it will inherit from the previous task.
-    """
 
     name: str = "temperature change"
     n_steps: int = 1_000_000
@@ -228,13 +159,11 @@ class TempChangeMaker(BaseOpenMMMaker):
     def _create_integrator(
         self, prev_task: OpenMMTaskDocument | None = None
     ) -> Integrator:
-        # we resolve this here because prev_task is available
         temp_steps_default = (self.n_steps // 10000) or 1
         self.temp_steps = self._resolve_attr(
             "temp_steps", prev_task, add_defaults={"temp_steps": temp_steps_default}
         )
 
-        # we do this dance so _resolve_attr takes its value from the previous task
         temp_holder, self.temperature = self.temperature, None
         self.starting_temperature = self._resolve_attr("temperature", prev_task)
         self.temperature = temp_holder or self._resolve_attr("temperature", prev_task)

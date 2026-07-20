@@ -1,15 +1,3 @@
-"""Define utility functions for amorphous structure equilibration.
-
-This file generalizes the MPMorph workflows of
-https://github.com/materialsproject/mpmorph
-originally written in atomate for VASP only to a more general
-code agnostic form.
-
-For information about the current flows, contact:
-- Bryant Li (@BryantLi-BLI)
-- Aaron Kaplan (@esoteric-ephemera)
-- Max Gallant (@mcgalcode)
-"""
 
 from __future__ import annotations
 
@@ -88,14 +76,11 @@ def get_average_volume_from_mp_api(
     ]
 
     if not vols:
-        # Find all Materials project entries containing the elements in the
-        # desired composition to estimate starting volume.
         with MPRester() as mpr:
             _entries = mpr.get_entries_in_chemsys(
                 [str(el) for el in composition.elements], inc_structure=True
             )
 
-        # Only take entries with at least two elements in common with target composition
         entries = [
             entry
             for entry in _entries
@@ -104,7 +89,6 @@ def get_average_volume_from_mp_api(
 
         vols = [entry.structure.volume / entry.structure.num_sites for entry in entries]
 
-    # Fallback: mix atomic volume by relative weight in composition
     if not vols:
         by_comp: dict[Element | Species, list[float]] = {
             ele: [] for ele in composition.elements
@@ -290,7 +274,6 @@ def get_average_volume_from_database(
                 vols.append(avg_vol["avg_vol"] * avg_vol["count"])
                 counts += avg_vol["count"]
 
-    # Fallback, relative weight of monatomic volumes
     if counts == 0:
         by_comp = {ele: get_entry_from_dict(ele.name) for ele in composition.elements}
         if any(v is None for v in by_comp.values()):

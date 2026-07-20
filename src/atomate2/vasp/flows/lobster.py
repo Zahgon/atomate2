@@ -1,4 +1,3 @@
-"""Flows for Lobster computations."""
 
 from __future__ import annotations
 
@@ -66,38 +65,6 @@ LOBSTER_UNIFORM_MAKER = UniformBandStructureMaker(
 
 @dataclass
 class VaspLobsterMaker(Maker):
-    """
-    Maker to perform a Lobster computation.
-
-    The calculations performed are:
-
-    1. Optional optimization.
-    2. Static calculation with ISYM=0.
-    3. Several Lobster computations testing several basis sets are performed.
-
-    .. Note::
-
-        The basis sets can only be changed with yaml files.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker : .BaseVaspMaker or None
-        A maker to perform a relaxation on the bulk. Set to ``None`` to skip the
-        bulk relaxation.
-    lobster_static_maker : .BaseVaspMaker
-        A maker to perform the computation of the wavefunction before the static run.
-        Cannot be skipped. It can be LOBSTERUNIFORM or LobsterStaticMaker()
-    lobster_maker : .LobsterMaker
-        A maker to perform the Lobster run.
-    delete_wavecars : bool
-        If true, all WAVECARs will be deleted after the run.
-    address_min_basis : str
-        A path to a yaml file including basis set information.
-    address_max_basis : str
-       A path to a yaml file including basis set information.
-    """
 
     name: str = "lobster"
     relax_maker: BaseVaspMaker | None = field(
@@ -134,7 +101,6 @@ class VaspLobsterMaker(Maker):
         """
         jobs = []
 
-        # optionally relax the structure
         optimization_dir = None
         optimization_uuid = None
         if self.relax_maker is not None:
@@ -145,7 +111,6 @@ class VaspLobsterMaker(Maker):
             optimization_uuid = optimization.output.uuid
             prev_dir = optimization_dir
 
-        # Information about the basis is collected
         basis_infos = get_basis_infos(
             structure=structure,
             vasp_maker=self.lobster_static_maker,
@@ -154,8 +119,6 @@ class VaspLobsterMaker(Maker):
         )
         jobs.append(basis_infos)
 
-        # Maker needs to be updated here. If the job itself is updated, no further
-        # updates on the job are possible
         lobster_static = update_user_incar_settings_maker(
             self.lobster_static_maker,
             basis_infos.output["nbands"],
@@ -176,8 +139,6 @@ class VaspLobsterMaker(Maker):
         )
         jobs.append(lobster_jobs)
 
-        # delete all WAVECARs that have been copied
-        # TODO:  this has to be adapted as well
         if self.delete_wavecars:
             delete_wavecars = remove_workflow_files(
                 [lobster_jobs.output["lobster_dirs"], lobster_static.output.dir_name],

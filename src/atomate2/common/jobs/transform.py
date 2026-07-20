@@ -1,4 +1,3 @@
-"""Utility jobs to apply transformations as a job."""
 
 from __future__ import annotations
 
@@ -22,11 +21,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class Transformer(Maker):
-    """Apply a pymatgen transformation, as a job.
-
-    For many of the standard and advanced transformations,
-    this should "just work" by supplying the transformation.
-    """
 
     transformation: AbstractTransformation
     name: str = "pymatgen transformation maker"
@@ -70,7 +64,6 @@ class Transformer(Maker):
 
 @dataclass
 class SQS(Transformer):
-    """Generate special quasi-random structures (SQSs)."""
 
     name: str = "SQS"
 
@@ -177,18 +170,15 @@ class SQS(Transformer):
                     mcsqs_corr_file.read_text().split("Objective_function=")[-1].strip()
                 )
 
-        # MCSQS caller changes the directory
         os.chdir(original_directory)
 
         if archive_instances and self.transformation.sqs_method == "mcsqs":
-            # MCSQS is the only SQS maker which requires a working directory
             mcsqs_dir = Path(self.transformation.directory)
             archive_name = str(self.transformation.directory)
             if archive_name[-1] == os.path.sep:
                 archive_name = archive_name[:-1]
             archive_name += ".tar.gz"
 
-            # add files to tarball
             with tarfile.open(archive_name, "w:gz") as tarball:
                 files: list[Path] = []
                 for file in os.scandir(mcsqs_dir):
@@ -196,14 +186,11 @@ class SQS(Transformer):
                         files.append(filename)
                         tarball.add(filename)
 
-            # cleanup
             _ = [file.unlink() for file in files]  # type: ignore[func-returns-value]
 
             if len(list(os.scandir(mcsqs_dir))) == 0:
                 mcsqs_dir.unlink()
 
-        # For MCSQS, check whether the `perfect_match` was found
-        # otherwise, SQSTask will throw a validation error
         found_perfect_match = False
         if (
             isinstance(best_objective, str)

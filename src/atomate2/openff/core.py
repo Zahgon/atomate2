@@ -1,4 +1,3 @@
-"""Core jobs for classical MD module."""
 
 from __future__ import annotations
 
@@ -22,39 +21,7 @@ if TYPE_CHECKING:
 
 
 def openff_job(method: Callable) -> job:
-    """Decorate the ``make`` method of ClassicalMD job makers.
-
-    This is a thin wrapper around :obj:`~jobflow.core.job.Job` that configures common
-    settings for all ClassicalMD jobs. Namely, configures the output schema to be a
-    :obj:`.ClassicalMDTaskDocument`.
-
-    Any makers that return classical md jobs (not flows) should decorate the ``make``
-    method with @openff_job. For example:
-
-    .. code-block:: python
-
-        class MyClassicalMDMaker(BaseOpenMMMaker):
-            @openff_job
-            def make(structure):
-                # code to run OpenMM job.
-                pass
-
-    Parameters
-    ----------
-    method : callable
-        A BaseVaspMaker.make method. This should not be specified directly and is
-        implied by the decorator.
-
-    Returns
-    -------
-    callable
-        A decorated version of the make function that will generate jobs.
-    """
-    return job(
-        method,
-        output_schema=ClassicalMDTaskDocument,
-        data=["interchange", "traj_blob"],
-    )
+    pass
 
 
 @due.dcite(Doi("10.1021/acs.jpcb.4c01558"), description="Open forcefield initiative")
@@ -128,10 +95,7 @@ def generate_interchange(
 
     mol_specs = merge_specs_by_name_and_smiles(mol_specs)
 
-    # TODO: ForceField doesn't currently support iterables, fix this
-    # force_field: str | Path | List[str | Path] = "openff_unconstrained-2.1.1.offxml",
 
-    # valid FFs: https://github.com/openforcefield/openff-forcefields
     ff_object = ForceField(force_field)
 
     interchange = Interchange.from_smirnoff(
@@ -143,12 +107,6 @@ def generate_interchange(
         allow_nonintegral_charges=True,
     )
 
-    # currently not needed because ForceField isn't correctly supporting iterables
-    # coerce force_field to a str or list of str
-    # if not isinstance(force_field, list):
-    #     force_field = [force_field]
-    # ff_list = [ff.name if isinstance(ff, Path) else ff for ff in force_field]
-    # force_field_names = ff_list if len(force_field) > 1 else ff_list[0]
 
     interchange_json = interchange.json()
 

@@ -1,4 +1,3 @@
-"""Defines the base FHI-aims convergence jobs."""
 
 from __future__ import annotations
 
@@ -20,30 +19,6 @@ CONVERGENCE_FILE_NAME = "convergence.json"  # make it a constant?
 
 @dataclass
 class ConvergenceMaker(Maker):
-    """Defines a convergence workflow with a maximum number of steps.
-
-    A job that performs convergence run for a given number of steps. Stops either
-    when all steps are done, or when the convergence criterion is reached, that is when
-    the absolute difference between the subsequent values of the convergence field is
-    less than a given epsilon.
-
-    Parameters
-    ----------
-    convergence_field: str
-        An input parameter that changes to achieve convergence
-    convergence_steps: Iterable
-        An iterable of the possible values for the convergence field.
-        If the iterable is depleted and the convergence is not reached,
-        then the job is failed
-    name : str
-        A name for the job
-    maker: .BaseAimsMaker
-        A maker for the run
-    criterion_name: str
-        A name for the convergence criterion. Must be in the run results
-    epsilon: float
-        A difference in criterion value for subsequent runs
-    """
 
     convergence_field: str
     convergence_steps: list | tuple
@@ -73,7 +48,6 @@ class ConvergenceMaker(Maker):
         prev_output_value : float or None
             The output value being converged from the previous aims calculation.
         """
-        # getting the calculation index
         idx = 0
         converged = False
         if convergence_data is not None:
@@ -83,7 +57,6 @@ class ConvergenceMaker(Maker):
             )
             convergence_data["criterion_values"].append(prev_output_value)
             if len(convergence_data["criterion_values"]) > 1:
-                # checking for convergence
                 converged = (
                     abs(prev_output_value - convergence_data["criterion_values"][-2])
                     < self.epsilon
@@ -106,7 +79,6 @@ class ConvergenceMaker(Maker):
                 json.dump(convergence_data, file)
 
         if idx < len(self.convergence_steps) and not converged:
-            # finding next jobs
             next_base_job = self.maker.make(structure, prev_dir=prev_dir)
             next_base_job.update_maker_kwargs(
                 {

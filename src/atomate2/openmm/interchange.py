@@ -1,4 +1,3 @@
-"""Define core interchange object used in OpenMM calculations."""
 
 from __future__ import annotations
 
@@ -12,12 +11,6 @@ from pydantic import BaseModel, Field
 
 
 class OpenMMInterchange(BaseModel):
-    """Define custom OpenFF Interchange.
-
-    This serves as an object to sit in place of
-    the Interchance object and serialize the OpenMM
-    system, topology, and state.
-    """
 
     system: str | None = Field(
         None, description="An XML file representing the OpenMM system."

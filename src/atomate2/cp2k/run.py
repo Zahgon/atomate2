@@ -1,4 +1,3 @@
-"""Functions to run CP2K."""
 
 from __future__ import annotations
 
@@ -49,11 +48,6 @@ logger = logging.getLogger(__name__)
 
 
 class JobType(ValueEnum):
-    """
-    Type of CP2K job.
-
-    - ``NORMAL``: Normal custodian :obj:`.Cp2kJob`.
-    """
 
     DIRECT = "direct"
     NORMAL = "normal"

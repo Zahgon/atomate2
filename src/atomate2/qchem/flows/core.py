@@ -1,4 +1,3 @@
-"""Define core QChem flows."""
 
 from __future__ import annotations
 
@@ -21,18 +20,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class DoubleOptMaker(Maker):
-    """
-    Maker to perform a double Qchem relaxation.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    relax_maker1 : .BaseVaspMaker
-        Maker to use to generate the first relaxation.
-    relax_maker2 : .BaseVaspMaker
-        Maker to use to generate the second relaxation.
-    """
 
     name: str = "double opt"
     opt_maker1: BaseQCMaker | None = field(default_factory=OptMaker)
@@ -56,7 +43,6 @@ class DoubleOptMaker(Maker):
         """
         jobs: list[Job] = []
         if self.opt_maker1:
-            # Run a pre-relaxation
             opt1 = self.opt_maker1.make(molecule, prev_dir=prev_dir)
             opt1.name += " 1"
             jobs += [opt1]
@@ -71,31 +57,11 @@ class DoubleOptMaker(Maker):
 
     @classmethod
     def from_opt_maker(cls, opt_maker: BaseQCMaker) -> DoubleOptMaker:
-        """
-        Instantiate the DoubleRelaxMaker with two relax makers of the same type.
-
-        Parameters
-        ----------
-        opt_maker : .BaseQCMaker
-            Maker to use to generate the first and second geometric optimizations.
-        """
-        return cls(relax_maker1=deepcopy(opt_maker), relax_maker2=deepcopy(opt_maker))
+        pass
 
 
 @dataclass
 class FrequencyOptMaker(Maker):
-    """
-    Maker to perform a frequency calculation after an optimization.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    opt_maker : .BaseQCMaker
-        Maker to use to generate the opt maker
-    freq_maker : .BaseQCMaker
-        Maker to use to generate the freq maker
-    """
 
     name: str = "opt frequency"
     opt_maker: BaseQCMaker = field(default_factory=OptMaker)
@@ -136,18 +102,6 @@ class FrequencyOptMaker(Maker):
 
 @dataclass
 class FrequencyOptFlatteningMaker(Maker):
-    """
-    Maker to perform a frequency calculation after an optimization.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    opt_maker : .BaseQCMaker
-        Maker to use to generate the opt maker
-    freq_maker : .BaseQCMaker
-        Maker to use to generate the freq maker
-    """
 
     name: str = "frequency flattening opt"
     opt_maker: BaseQCMaker = field(default_factory=OptMaker)

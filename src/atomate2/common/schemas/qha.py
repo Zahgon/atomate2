@@ -1,4 +1,3 @@
-"""Schemas for QHA documents."""
 
 import logging
 from typing import Union
@@ -15,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class PhononQHADoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg]
-    """Collection of all data produced by the QHA workflow."""
 
     structure: Structure | None = Field(
         None, description="Structure of Materials Project."
@@ -132,8 +130,6 @@ class PhononQHADoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg]
         import warnings
 
         with warnings.catch_warnings():
-            # Phonopy messes with the warnings
-            # Turns all warnings into errors
 
             qha = PhonopyQHA(
                 volumes=np.array(volumes),
@@ -147,8 +143,6 @@ class PhononQHADoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg]
                 eos=eos_type,
             )
 
-        # create some plots here
-        # add kwargs to change the names and file types
         fig_ext = kwargs.get("plot_type", "pdf")
         qha.plot_helmholtz_volume().savefig(
             f"{kwargs.get('helmholtz_volume_filename', 'helmholtz_volume')}.{fig_ext}"
@@ -168,7 +162,6 @@ class PhononQHADoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg]
         qha.plot_heat_capacity_P_numerical().savefig(
             f"{kwargs.get('heat_capacity_plot', 'heat_capacity_P_numerical')}.{fig_ext}"
         )
-        # qha.plot_heat_capacity_P_polyfit().savefig("heat_capacity_P_polyfit.eps")
         ge_temp_plot = kwargs.get("gruneisen_temperature_plot", "gruneisen_temperature")
         qha.plot_gruneisen_temperature().savefig(f"{ge_temp_plot}.{fig_ext}")
 
@@ -200,13 +193,11 @@ class PhononQHADoc(StructureMetadata, extra="allow"):  # type: ignore[call-arg]
             )
         )
 
-        # write files as well - might be easier for plotting
 
         return cls.from_structure(
             structure=structure,
             meta_structure=structure,
             bulk_modulus=qha.bulk_modulus[0],  # all bulk moduli are the same
-            # (if electronic effects are not treated)
             thermal_expansion=qha.thermal_expansion,
             helmholtz_volume=qha.helmholtz_volume,
             volume_temperature=qha.volume_temperature,

@@ -1,4 +1,3 @@
-"""Tools for calculating elastic tensors."""
 
 from __future__ import annotations
 

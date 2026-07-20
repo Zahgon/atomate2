@@ -1,4 +1,3 @@
-"""Run an ApproxNEB flow using MLIPs."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -15,24 +14,6 @@ from atomate2.forcefields.utils import MLFF
 
 @dataclass
 class ForceFieldApproxNebFromEndpointsMaker(ApproxNebFromEndpointsMaker):
-    """
-    Perform ApproxNEB on a single hop using ML forcefields.
-
-    image_relax_maker : Maker
-        Maker to relax both endpoints and images
-    selective_dynamics_scheme : "fix_two_atoms" (default) or None
-        If "fix_two_atoms", uses the default selective dynamics scheme of ApproxNEB,
-        wherein the migrating ion and the ion farthest from it are the only
-        ions whose positions can relax.
-    min_images_per_hop : int or None
-        If an int, the minimum number of image calculations per hop that
-        must succeed to mark a hop as successfully calculated.
-    min_hop_distance : float or bool (default = True)
-        If a float, skips any hops where the working ion moves a distance less
-        than min_hop_distance.
-        If True, min_hop_distance is set to twice the average ionic radius.
-        If False, no checks are made.
-    """
 
     image_relax_maker: ForceFieldRelaxMaker
     name: str = "MLFF ApproxNEB single hop from endpoints maker"
@@ -70,29 +51,4 @@ class ForceFieldApproxNebFromEndpointsMaker(ApproxNebFromEndpointsMaker):
         calculator_kwargs: dict | None = None,
         **kwargs,
     ) -> Self:
-        """
-        Create an ApproxNEB flow from a forcefield name.
-
-        Parameters
-        ----------
-        force_field_name : str or .MLFF or dict
-            The name of the force field.
-        calculator_kwargs : dict | None
-            The keyword arguments to pass to the calculator
-        **kwargs
-            Additional kwargs to pass to ApproxNEB
-
-        Returns
-        -------
-        MLFFApproxNebFromEndpointsMaker
-        """
-        image_relax_maker = ForceFieldRelaxMaker(
-            force_field_name=force_field_name,
-            calculator_kwargs=calculator_kwargs or {},
-            relax_cell=False,
-        )
-        kwargs.update(image_relax_maker=image_relax_maker)
-        return cls(
-            name=(f"{image_relax_maker.mlff.name} ApproxNEB from endpoints Maker"),
-            **kwargs,
-        )
+        pass

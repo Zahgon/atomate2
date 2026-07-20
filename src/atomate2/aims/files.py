@@ -1,4 +1,3 @@
-"""Functions dealing with FHI-aims files."""
 
 from __future__ import annotations
 
@@ -50,12 +49,8 @@ def copy_aims_outputs(
     src_dir = strip_hostname(src_dir)
     logger.info(f"Copying FHI-aims inputs from {src_dir}")
     directory_listing = file_client.listdir(src_dir, host=src_host)
-    # additional files like bands, DOS, *.cube, whatever
     additional_files = additional_aims_files or []
 
-    # copy files
-    # (no need to copy aims.out by default; it can be added to additional_aims_files
-    # explicitly if needed)
     files: list[str] = (
         ["hessian.aims", "geometry.in.next_step", "*.csc"] if restart_to_input else []
     )

@@ -1,4 +1,3 @@
-"""Utilities for testing FHI-aims calculations."""
 
 from __future__ import annotations
 
@@ -69,29 +68,14 @@ def monkeypatch_aims(
     For examples, see the tests in tests/aims/jobs/core.py.
     """
 
-    def mock_run_aims(*args, **kwargs) -> None:  # noqa: ARG001
-        name = CURRENT_JOB.job.name
-        try:
-            ref_dir = ref_path / _REF_PATHS[name]
-        except KeyError:
-            raise ValueError(
-                f"no reference directory found for job {name!r}; "
-                f"reference paths received={_REF_PATHS}"
-            ) from None
-        fake_run_aims(ref_dir, **_FAKE_RUN_AIMS_KWARGS.get(name, {}))
 
     get_input_set_orig = AimsInputGenerator.get_input_set
 
-    def mock_get_input_set(self: AimsInputGenerator, *args, **kwargs) -> AimsInputSet:
-        return get_input_set_orig(self, *args, **kwargs)
 
     monkeypatch.setattr(atomate2.aims.run, "run_aims", mock_run_aims)
     monkeypatch.setattr(atomate2.aims.jobs.base, "run_aims", mock_run_aims)
     monkeypatch.setattr(AimsInputGenerator, "get_input_set", mock_get_input_set)
 
-    def _run(ref_paths: dict, fake_run_aims_kwargs: dict | None = None) -> None:
-        _REF_PATHS.update(ref_paths)
-        _FAKE_RUN_AIMS_KWARGS.update(fake_run_aims_kwargs or {})
 
     yield _run
 
@@ -132,7 +116,6 @@ def fake_run_aims(
 
     copy_aims_outputs(ref_path)
 
-    # pretend to run aims by copying pre-generated outputs from reference dir
     logger.info("Generated fake aims outputs")
 
 

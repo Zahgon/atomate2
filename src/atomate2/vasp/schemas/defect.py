@@ -1,4 +1,3 @@
-"""Schemas for defect documents."""
 
 import logging
 from pathlib import Path
@@ -12,11 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class FiniteDifferenceDocument(BaseModel):
-    """Collection of computed wavefunction overlap objects.
-
-    Overlaps obtained using a single reference WAVECAR and a list of WAVECARs
-    from distorted structures.
-    """
 
     wswqs: list[WSWQ]
 

@@ -1,4 +1,3 @@
-"""A definition of a MSON document representing an Abinit task."""
 
 from __future__ import annotations
 
@@ -25,13 +24,6 @@ logger = logging.getLogger(__name__)
 
 
 class InputDoc(BaseModel):
-    """Summary of the inputs for an Abinit calculation.
-
-    Parameters
-    ----------
-    structure: Structure
-        The final pymatgen Structure of the final system
-    """
 
     structure: Structure = Field(None, description="The input structure object")
     abinit_input: AbinitInput = Field(
@@ -64,29 +56,6 @@ class InputDoc(BaseModel):
 
 
 class OutputDoc(BaseModel):
-    """Summary of the outputs for an Abinit calculation.
-
-    Parameters
-    ----------
-    structure: Structure
-        The final pymatgen Structure of the final system
-    trajectory: List[Structure]
-        The trajectory of output structures
-    energy: float
-        The final total DFT energy for the last calculation
-    energy_per_atom: float
-        The final DFT energy per atom for the last calculation
-    bandgap: float
-        The DFT bandgap for the last calculation
-    cbm: float
-        CBM for this calculation
-    vbm: float
-        VBM for this calculation
-    forces: List[Vector3D]
-        Forces on atoms from the last calculation
-    stress: Matrix3D
-        Stress on the unit cell from the last calculation
-    """
 
     structure: Structure = Field(None, description="The output structure object")
     trajectory: Sequence[Structure] | None = Field(
@@ -137,47 +106,6 @@ class OutputDoc(BaseModel):
 
 
 class AbinitTaskDoc(StructureMetadata):
-    """Definition of Abinit task document.
-
-    Parameters
-    ----------
-    dir_name: str
-        The directory for this Abinit task
-    last_updated: str
-        Timestamp for when this task document was last updated
-    completed_at: str
-        Timestamp for when this task was completed
-    input: .InputDoc
-        The input to the first calculation
-    output: .OutputDoc
-        The output of the final calculation
-    structure: Structure
-        Final output structure from the task
-    state: .TaskState
-        State of this task
-    included_objects: List[.AbinitObject]
-        List of Abinit objects included with this task document
-    abinit_objects: Dict[.AbinitObject, Any]
-        Abinit objects associated with this task
-    task_label: str
-        A description of the task
-    tags: List[str]
-        Metadata tags for this task document
-    author: str
-        Author extracted from transformations
-    icsd_id: str
-        International crystal structure database id of the structure
-    calcs_reversed: List[.Calculation]
-        The inputs and outputs for all Abinit runs in this task.
-    transformations: Dict[str, Any]
-        Information on the structural transformations, parsed from a
-        transformations.json file
-    custodian: Any
-        Information on the custodian settings used to run this
-        calculation, parsed from a custodian.json file
-    additional_json: Dict[str, Any]
-        Additional json loaded from the calculation directory
-    """
 
     dir_name: str | None = Field(None, description="The directory for this Abinit task")
     last_updated: str | None = Field(
@@ -282,14 +210,11 @@ class AbinitTaskDoc(StructureMetadata):
             dir_name
         )  # VT: TODO to put here?necessary with laptop at least...
 
-        # only store objects from last calculation
-        # TODO: make this an option
         abinit_objects = all_abinit_objects[-1]
         included_objects = None
         if abinit_objects:
             included_objects = list(abinit_objects.keys())
 
-        # rewrite the original structure save!
 
         if isinstance(calcs_reversed[-1].output.structure, Structure):
             attr = "from_structure"
@@ -353,7 +278,6 @@ def _find_abinit_files(
     def _get_task_files(files: list[Path], suffix: str = "") -> dict:
         abinit_files = {}
         for file in files:
-            # Here we make assumptions about the output file naming
             if file.match(f"*outdata/out_GSR{suffix}*"):
                 abinit_files["abinit_gsr_file"] = Path(file).relative_to(path)
             elif file.match(f"*{LOG_FILE_NAME}{suffix}*"):
@@ -367,16 +291,13 @@ def _find_abinit_files(
         subfolder_match = list(path.glob(f"{task_name}/*"))
         suffix_match = list(path.glob(f"*.{task_name}*"))
         if len(subfolder_match) > 0:
-            # subfolder match
             task_files[task_name] = _get_task_files(subfolder_match)
         elif len(suffix_match) > 0:
-            # try extension schema
             task_files[task_name] = _get_task_files(
                 suffix_match, suffix=f".{task_name}"
             )
 
     if len(task_files) == 0:
-        # get any matching file from the root folder
         standard_files = _get_task_files(
             list(path.glob("*")) + list(path.glob("outdata/*"))
         )

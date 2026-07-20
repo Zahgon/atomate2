@@ -1,4 +1,3 @@
-"""Flows for calculating the polarization of a polar material."""
 
 from __future__ import annotations
 
@@ -31,22 +30,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FerroelectricMaker(Maker):
-    """
-    Maker to calculate polarization of a polar material.
-
-    Parameters
-    ----------
-    name : str
-        Name of the flows produced by this maker.
-    nimages: int
-        Number of interpolated structures calculated from polar to nonpolar structures
-    relax_maker: BaseVaspMaker or None or tuple
-        None to avoid relaxation of both polar and nonpolar structures
-        BaseVaspMaker to relax both structures (default)
-        tuple of BaseVaspMaker and None to control relaxation for each structure
-    lcalcpol_maker: BaseVaspMaker
-       Vasp maker to compute the polarization of each structure
-    """
 
     name: str = "ferroelectric"
     nimages: int = 8
@@ -80,7 +63,6 @@ class FerroelectricMaker(Maker):
             self.relax_maker = (self.relax_maker, self.relax_maker)
 
         if self.relax_maker[0]:
-            # optionally relax the polar structure
             relax_p = self.relax_maker[0].make(polar_structure)
             relax_p.append_name(" polar")
             jobs.append(relax_p)
@@ -97,7 +79,6 @@ class FerroelectricMaker(Maker):
         polar_structure = polar_lcalcpol.output.structure
 
         if self.relax_maker[1]:
-            # optionally relax the nonpolar structure
             relax_np = self.relax_maker[1].make(nonpolar_structure)
             relax_np.append_name(" nonpolar")
             jobs.append(relax_np)

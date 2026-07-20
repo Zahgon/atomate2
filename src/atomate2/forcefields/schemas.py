@@ -1,4 +1,3 @@
-"""Schema definitions for force field tasks."""
 
 from __future__ import annotations
 
@@ -25,7 +24,6 @@ if TYPE_CHECKING:
 
 
 class ForceFieldMeta(BaseModel):
-    """Add metadata to forcefield output documents."""
 
     forcefield_name: str | None = Field(
         None,
@@ -57,12 +55,10 @@ class ForceFieldMeta(BaseModel):
 
     @property
     def forcefield_objects(self) -> dict[AseObject, Any] | None:
-        """Alias `objects` attr for backwards compatibility."""
-        return self.objects
+        pass
 
 
 class ForceFieldMoleculeTaskDocument(AseMoleculeTaskDoc, ForceFieldMeta):
-    """Document containing information on molecule manipulation using a force field."""
 
     @classmethod
     def from_ase_task_doc(
@@ -87,7 +83,6 @@ class ForceFieldMoleculeTaskDocument(AseMoleculeTaskDoc, ForceFieldMeta):
 
 
 class ForceFieldTaskDocument(AseStructureTaskDoc, ForceFieldMeta):
-    """Document containing information on atomistic manipulation using a force field."""
 
     @classmethod
     def from_ase_compatible_result(
@@ -159,11 +154,9 @@ class ForceFieldTaskDocument(AseStructureTaskDoc, ForceFieldMeta):
             ),
         }
 
-        # Infer `calculator_meta` for MLFFs if not provided
         if (calculator_meta is None) and ase_calculator_name.startswith("MLFF."):
             calculator_meta = _get_standardized_mlff(ase_calculator_name)
 
-        # Populate forcefield version if possible
         if calculator_meta is None:
             warnings.warn(
                 "Could not determine forcefield version as calculator_meta was not "

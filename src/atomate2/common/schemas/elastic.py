@@ -1,4 +1,3 @@
-"""Schemas for elastic tensor fitting and related properties."""
 
 from copy import deepcopy
 from enum import Enum
@@ -24,7 +23,6 @@ from atomate2.common.utils import _recursive_to_list
 
 
 class DerivedProperties(BaseModel):
-    """Properties derived from an elastic tensor."""
 
     k_voigt: float | None = Field(
         None, description="Voigt average of the bulk modulus."
@@ -88,7 +86,6 @@ class DerivedProperties(BaseModel):
 
 
 class FittingData(BaseModel):
-    """Data used to fit elastic tensors."""
 
     cauchy_stresses: list[Matrix3D] | None = Field(
         None, description="The Cauchy stresses used to fit the elastic tensor."
@@ -114,7 +111,6 @@ class FittingData(BaseModel):
 
 
 class ElasticTensorDocument(BaseModel):
-    """Raw and standardized elastic tensors."""
 
     raw: MatrixVoigt | list | None = Field(None, description="Raw elastic tensor.")
     ieee_format: MatrixVoigt | list | None = Field(
@@ -123,13 +119,11 @@ class ElasticTensorDocument(BaseModel):
 
 
 class ElasticWarnings(Enum):
-    """Warnings for elastic document."""
 
     FAILED_PERTURBATIONS = "failed_perturbations"
 
 
 class ElasticDocument(StructureMetadata):
-    """Document containing elastic tensor information and related properties."""
 
     structure: Structure | None = Field(
         None, description="The structure for which the elastic data is calculated."
@@ -212,7 +206,6 @@ class ElasticDocument(StructureMetadata):
 
         deformations = [s.get_deformation_matrix() for s in strains]
 
-        # -0.1 to convert units from kBar to GPa and stress direction
         stresses = [-0.1 * s for s in stresses]
         eq_stress = None
         if equilibrium_stress:
@@ -226,7 +219,6 @@ class ElasticDocument(StructureMetadata):
             order = 2 if len(stresses) < 70 else 3  # TODO: Figure this out better
 
         if order > 2 or fitting_method == "finite_difference":
-            # force finite diff if order > 2
             result = ElasticTensorExpansion.from_diff_fit(
                 strains, pk_stresses, eq_stress=eq_stress, order=order
             )
@@ -315,18 +307,14 @@ def expand_strains(
         for symm_op in symm_ops:
             rotated_strain = strain.transform(symm_op)
 
-            # check if we have more than one perturbed strain component
             if sum(np.abs(rotated_strain.voigt) > tol) > 1:
                 continue
 
-            # check if we have seen it before
             if rotated_strain in mapping:
                 continue
 
-            # store the rotated strain so we know we've seen it
             mapping[rotated_strain] = True
 
-            # expand the other properties
             full_strains.append(rotated_strain)
             full_stresses.append(stresses[idx].transform(symm_op))
             full_uuids.append(uuids[idx])

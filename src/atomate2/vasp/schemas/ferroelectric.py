@@ -1,4 +1,3 @@
-"""Schemas for Ferroelectric wflow."""
 
 import numpy as np
 from monty.serialization import dumpfn
@@ -11,7 +10,6 @@ __all__ = ["PolarizationDocument"]
 
 
 class PolarizationDocument(BaseModel):
-    """Symmetry data set for materials documents."""
 
     pretty_formula: str = Field(
         None,
@@ -166,14 +164,11 @@ class PolarizationDocument(BaseModel):
                 d.update({f"{j}": np.ravel(var[:, i].tolist())})
             return d
 
-        # General information
         polarization_dict.update(
             {"pretty_formula": structures[0].composition.reduced_formula}
         )
-        # polarization_dict.update({"wfid": wfid})
         polarization_dict.update({"task_label_order": tasks})
 
-        # Polarization information
         polarization_dict.update({"polarization_change": p_change})
         polarization_dict.update({"polarization_change_norm": p_norm})
         polarization_dict.update(
@@ -185,7 +180,6 @@ class PolarizationDocument(BaseModel):
         polarization_dict.update({"polarization_quanta": split_abc(quanta)})
         polarization_dict.update({"zval_dict": zval_dict})
 
-        # Energy information
         polarization_dict.update(
             {"energy_per_atom_max_spline_jumps": energy_max_spline_jump}
         )
@@ -193,7 +187,6 @@ class PolarizationDocument(BaseModel):
         polarization_dict.update({"energies_per_atom": energies_per_atom})
         polarization_dict.update({"structures": structures})
 
-        # Add job_dirs and uuids to the polarization_dict
         polarization_dict.update({"job_dirs": job_dirs})
         polarization_dict.update({"uuids": uuids})
 

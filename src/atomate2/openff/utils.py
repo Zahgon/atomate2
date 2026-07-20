@@ -1,4 +1,3 @@
-"""Utility functions for classical md subpackage."""
 
 from __future__ import annotations
 
@@ -68,7 +67,6 @@ def create_mol_spec(
         charge_method,
     )
 
-    # create mol_spec
     return MoleculeSpec(
         name=(name or smiles),
         count=count,
@@ -150,68 +148,7 @@ def calculate_elyte_composition(
     solvent_ratio_dimension: Literal["mass", "volume"] = "mass",
     atomic_masses: dict[int, float] | None = None,
 ) -> dict[str, float]:
-    """Calculate the normalized mass ratios of an electrolyte solution.
-
-    Parameters
-    ----------
-    solvents : dict
-        Dictionary of solvent SMILES strings and their relative unit fraction.
-    salts : dict
-        Dictionary of salt SMILES strings and their molarities.
-    solvent_densities : dict
-        Dictionary of solvent SMILES strings and their densities (g/ml).
-    solvent_ratio_dimension: optional, str
-        Whether the solvents are included with a ratio of "mass" or "volume"
-    atomic_masses : dict[int,float] or None (Default)
-        The mass of each element in the species dict. Defaults to the
-        most recent data from pymatgen.core.periodic_table.Element
-
-    Returns
-    -------
-    dict
-        A dictionary containing the normalized mass ratios of molecules in
-        the electrolyte solution.
-    """
-    # Check if all solvents have corresponding densities
-    solvent_densities = solvent_densities or {}
-    if set(solvents) > set(solvent_densities):
-        raise ValueError("solvent_densities must contain densities for all solvents.")
-
-    # convert masses to volumes so we can normalize volume
-    if solvent_ratio_dimension == "mass":
-        solvents = {
-            smile: mass / solvent_densities[smile] for smile, mass in solvents.items()
-        }
-
-    # normalize volume ratios
-    total_vol = sum(solvents.values())
-    solvent_volumes = {smile: vol / total_vol for smile, vol in solvents.items()}
-
-    # Convert volume ratios to mass ratios using solvent densities
-    mass_ratio = {
-        smile: vol * solvent_densities[smile] for smile, vol in solvent_volumes.items()
-    }
-
-    # Calculate the molecular weights of the solvent
-    atomic_masses = atomic_masses or DEFAULT_ATOMIC_MASSES
-    salt_mws = {}
-    for smile in salts:
-        mol = tk.Molecule.from_smiles(smile, allow_undefined_stereo=True)
-        salt_mws[smile] = sum(atomic_masses[atom.atomic_number] for atom in mol.atoms)
-
-    # Convert salt mole ratios to mass ratios
-    salt_mass_ratio = {
-        salt: molarity * salt_mws[salt] / 1000 for salt, molarity in salts.items()
-    }
-
-    # Combine solvent and salt mass ratios
-    combined_mass_ratio = mass_ratio | salt_mass_ratio
-
-    # Calculate the total mass
-    total_mass = sum(combined_mass_ratio.values())
-
-    # Normalize the mass ratios
-    return {species: mass / total_mass for species, mass in combined_mass_ratio.items()}
+    pass
 
 
 def counts_from_masses(
@@ -279,7 +216,6 @@ def counts_from_box_size(
     volume = (side_length * 1e-7) ** 3  # Convert from nm3 to cm^3
     total_mass = volume * density  # grams
 
-    # Calculate molecular weights
     mol_weights = []
     for smile in species:
         mol = tk.Molecule.from_smiles(smile, allow_undefined_stereo=True)
@@ -287,11 +223,9 @@ def counts_from_box_size(
     mean_mw = np.mean(mol_weights)
     n_mol = (total_mass / mean_mw) * Avogadro
 
-    # Calculate the number of moles needed for each species
     mol_ratio = np.array(list(species.values())) / np.array(mol_weights)
     mol_ratio /= sum(mol_ratio)
 
-    # Convert moles to number of molecules
     return {
         smile: int(np.round(ratio * n_mol))
         for smile, ratio in zip(species.keys(), mol_ratio, strict=True)
@@ -304,20 +238,4 @@ def create_mol_dicts(
     name_lookup: dict[str, str] = None,
     xyz_charge_lookup: dict[str, tuple] = None,
 ) -> list[dict]:
-    """Create lists of mol specs from just counts. Still rudimentary."""
-    spec_dicts = []
-    for smile, count in counts.items():
-        spec_dict = {
-            "smile": smile,
-            "count": count,
-            "name": name_lookup.get(smile, smile),
-        }
-        if re.search(r"[+-]", smile):
-            spec_dict["charge_scaling"] = ion_charge_scaling
-        xyz_charge = xyz_charge_lookup.get(smile)
-        if xyz_charge is not None:
-            spec_dict["geometry"] = xyz_charge[0]
-            spec_dict["partial_charges"] = xyz_charge[1]
-            spec_dict["charge_method"] = "RESP"
-        spec_dicts.append(spec_dict)
-    return spec_dicts
+    pass

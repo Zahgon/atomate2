@@ -1,4 +1,3 @@
-"""Helper functions for datetime objects."""
 
 from __future__ import annotations
 

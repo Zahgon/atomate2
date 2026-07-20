@@ -1,4 +1,3 @@
-"""Module defining amset jobs."""
 
 from __future__ import annotations
 
@@ -19,20 +18,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AmsetMaker(Maker):
-    """
-    AMSET job maker.
-
-    Parameters
-    ----------
-    name : str
-        Name of jobs produced by this maker.
-    resubmit : bool
-        Whether to resubmit an new calculation with a denser interpolation factor if the
-        transport results are not converged. Note, checking for convergence requires
-        a previous AMSET directory.
-    task_document_kwargs : dict
-        Keyword arguments passed to :obj:`.AmsetTaskDocument.from_directory`.
-    """
 
     name: str = "amset"
     resubmit: bool = False
@@ -64,7 +49,6 @@ class AmsetMaker(Maker):
             A directory containing the dense band structure file (vasprun.xml or
             band_structure_data.json).
         """
-        # copy previous inputs
         from_prev = prev_dir is not None
         if prev_dir is not None:
             copy_amset_files(prev_dir)
@@ -80,10 +64,8 @@ class AmsetMaker(Maker):
             if wavefunction_dir is not None:
                 copy_amset_files(wavefunction_dir)
 
-        # write amset settings
         write_amset_settings(settings, from_prev=from_prev)
 
-        # run amset
         logger.info("Running AMSET")
         run_amset()
 
@@ -99,16 +81,13 @@ class AmsetMaker(Maker):
 
         self.task_document_kwargs.setdefault("include_mesh", converged is not False)
 
-        # parse amset outputs
         task_doc = AmsetTaskDocument.from_directory(
             Path.cwd(), **self.task_document_kwargs
         )
         task_doc.converged = converged
 
-        # gzip folder
         gzip_dir(".")
 
-        # handle resubmission for non-converged calculations
         replace = None
         if self.resubmit and not converged:
             replace = self.make(

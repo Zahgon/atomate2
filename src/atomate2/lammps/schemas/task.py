@@ -1,4 +1,3 @@
-"""Task Document for LAMMPS calculations."""
 
 import warnings
 from pathlib import Path
@@ -20,7 +19,6 @@ from atomate2.utils.datetime import datetime_str
 
 
 class LammpsTaskDocument(StructureMetadata):
-    """Task Document for LAMMPS calculations."""
 
     dir_name: str = Field(None, description="Directory where the task was run")
 

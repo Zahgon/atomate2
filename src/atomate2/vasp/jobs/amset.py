@@ -1,4 +1,3 @@
-"""Module defining jobs for combining AMSET and VASP calculations."""
 
 from __future__ import annotations
 
@@ -38,32 +37,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class DenseUniformMaker(NonSCFMaker):
-    """
-    Maker to perform a dense uniform non-self consistent field calculation.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .VaspInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_vasp_input_set`.
-    copy_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_vasp_outputs`.
-    run_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_vasp`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "dense uniform"
     input_set_generator: VaspInputGenerator = field(
@@ -75,36 +48,6 @@ class DenseUniformMaker(NonSCFMaker):
 
 @dataclass
 class StaticDeformationMaker(BaseVaspMaker):
-    """
-    Maker to perform a static calculations on structural deformations.
-
-    The main difference to a normal static calculation is that this will write an
-    explicit KPOINTS file, rather than using KSPACING. This is because all deformations
-    ultimately need to be on exactly the same k-point mesh dimensions
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .VaspInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_vasp_input_set`.
-    copy_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_vasp_outputs`.
-    run_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_vasp`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "static deformation"
     input_set_generator: VaspInputGenerator = field(
@@ -117,36 +60,6 @@ class StaticDeformationMaker(BaseVaspMaker):
 
 @dataclass
 class HSEStaticDeformationMaker(BaseVaspMaker):
-    """
-    Maker to perform an HSE06 static calculations on structural deformations.
-
-    The main difference to a normal HSE06 static calculation is that this will write an
-    explicit KPOINTS file, rather than using KSPACING. This is because all deformations
-    ultimately need to be on exactly the same k-point mesh dimensions
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .VaspInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_vasp_input_set`.
-    copy_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_vasp_outputs`.
-    run_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_vasp`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "static deformation"
     input_set_generator: VaspInputGenerator = field(
@@ -159,32 +72,6 @@ class HSEStaticDeformationMaker(BaseVaspMaker):
 
 @dataclass
 class HSEDenseUniformMaker(HSEBSMaker):
-    """
-    Maker to perform a dense uniform non-self consistent field calculation.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .VaspInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_vasp_input_set`.
-    copy_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_vasp_outputs`.
-    run_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_vasp`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "dense uniform"
     input_set_generator: VaspInputGenerator = field(
@@ -238,18 +125,15 @@ def run_amset_deformations(
     statics = []
     outputs = []
     for idx, deformation in enumerate(deformations):
-        # deform the structure
         dst = DeformStructureTransformation(deformation=deformation)
         deformed_structure = dst.apply_transformation(structure)
 
-        # create the job
         static_job = static_deformation_maker.make(
             deformed_structure, prev_dir=prev_dir
         )
         static_job.append_name(f" {idx + 1}/{len(deformations)}")
         statics.append(static_job)
 
-        # extract the outputs we want (only the dir name)
         outputs.append(static_job.output.dir_name)
 
     static_flow = Flow(statics, outputs)
@@ -293,12 +177,8 @@ def calculate_deformation_potentials(
     from amset.tools.deformation import read
     from click.testing import CliRunner
 
-    # convert arguments into their command line equivalents
-    # note, amset expects the band indices to be 1 indexed, whereas we store them
-    # as zero indexed
     symprec_str = "N" if symprec is None else str(symprec)
 
-    # TODO: Handle host names properly
     bulk_dir = strip_hostname(bulk_dir)
     deformation_dirs = [strip_hostname(d) for d in deformation_dirs]
     args = [
@@ -315,8 +195,6 @@ def calculate_deformation_potentials(
     runner = CliRunner()
     result = runner.invoke(read, args, catch_exceptions=False)
 
-    # TODO: Store some information about the deformation potentials, e.g., values
-    #   at CBM and VBM?
     return {"dir_name": str(Path.cwd()), "log": result.output}
 
 
@@ -395,7 +273,6 @@ def generate_wavefunction_coefficients(dir_name: str) -> dict[str, Any]:
     vasprun_file = Path(dir_name) / get_zfile(files, "vasprun.xml")
     wavecar_file = Path(dir_name) / get_zfile(files, "WAVECAR")
 
-    # wavecar can't be gzipped, so copy it to current directory and unzip it
     fc.copy(wavecar_file, wavecar_file.name)
     fc.gunzip(wavecar_file.name)
 
@@ -404,7 +281,6 @@ def generate_wavefunction_coefficients(dir_name: str) -> dict[str, Any]:
     result = runner.invoke(wave, args, catch_exceptions=False)
     ibands = _extract_ibands(result.output)
 
-    # remove WAVECAR from current directory
     fc.remove("WAVECAR")
 
     return {"dir_name": str(Path.cwd()), "log": result.output, "ibands": ibands}
@@ -431,7 +307,6 @@ def _extract_ibands(log: str) -> tuple[list[int], ...]:
     result_splits = log.split("\n")
     for i in range(len(result_splits)):
         if "Including bands" in result_splits[i]:
-            # non-spin polarised result system
             min_band, max_band = result_splits[i].split()[-1].split("—")
             return (list(range(int(min_band) - 1, int(max_band))),)
 
@@ -442,9 +317,7 @@ def _extract_ibands(log: str) -> tuple[list[int], ...]:
             bibands = list(range(int(bmin_band) - 1, int(bmax_band)))
 
             if "up" in result_splits[i + 1]:
-                # up listed first
                 return aibands, bibands
             else:  # noqa: RET505
-                # down listed first
                 return bibands, aibands
     raise ValueError("Could not find ibands in log.")

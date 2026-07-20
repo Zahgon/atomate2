@@ -1,4 +1,3 @@
-"""Solvent and solvation schemas for OpenFF which are not yet production ready."""
 
 from __future__ import annotations
 
@@ -24,26 +23,11 @@ if TYPE_CHECKING:
 
 
 def data_frame_validater(o: Any) -> pd.DataFrame:
-    """Define custom validator for pandas DataFrame.
-
-    Parameters
-    ----------
-    o : Any
-
-    Returns
-    -------
-    pandas DataFrame
-    """
-    if isinstance(o, pd.DataFrame):
-        return o
-    if isinstance(o, str):
-        return pd.read_csv(StringIO(o))
-    raise ValueError(f"Invalid DataFrame: {o}")
+    pass
 
 
 def data_frame_serializer(df: pd.DataFrame) -> str:
-    """Serialize pandas DataFrame as CSV."""
-    return df.to_csv()
+    pass
 
 
 DataFrame = Annotated[
@@ -55,7 +39,6 @@ DataFrame = Annotated[
 
 
 class SolventBenchmarkingDoc(BaseModel):
-    """Define document for benchmarking solvent properties."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -103,49 +86,10 @@ class SolventBenchmarkingDoc(BaseModel):
         viscosity_run_kwargs: dict | None = None,
         tags: list[str] | None = None,
     ) -> SolventBenchmarkingDoc:
-        """Create document from openmm Universe."""
-        if temperature is not None:
-            dielectric = DielectricConstant(
-                u.atoms, temperature=temperature, make_whole=False
-            )
-            dielectric_run_kwargs = dielectric_run_kwargs or {}
-            dielectric.run(**dielectric_run_kwargs)
-            eps = dielectric.results.eps_mean
-        else:
-            eps = None
-
-        if u.atoms.ts.has_velocities:
-            start, stop = int(0.2 * len(u.trajectory)), int(0.8 * len(u.trajectory))
-            viscosity_helfand = ViscosityHelfand(
-                u.atoms,
-                temp_avg=temperature,
-                linear_fit_window=(start, stop),
-            )
-            viscosity_run_kwargs = viscosity_run_kwargs or {}
-            viscosity_helfand.run(**viscosity_run_kwargs)
-            viscosity_function_values = viscosity_helfand.results.timeseries.tolist()
-            viscosity = viscosity_helfand.results.viscosity
-
-        else:
-            viscosity_function_values = None
-            viscosity = None
-
-        return cls(
-            density=density,
-            viscosity_function_values=viscosity_function_values,
-            viscosity=viscosity,
-            dielectric=eps,
-            job_uuid=job_uuid,
-            flow_uuid=flow_uuid,
-            dielectric_run_kwargs=dielectric_run_kwargs,
-            viscosity_run_kwargs=viscosity_run_kwargs,
-            tags=tags,
-        )
+        pass
 
 
-# class SolvationDoc(ClassicalMDDoc, arbitrary_types_allowed=True):
 class SolvationDoc(BaseModel):
-    """Schematize solvation calculation."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -157,7 +101,6 @@ class SolvationDoc(BaseModel):
         None, description="Whether system is an electrolyte"
     )
 
-    # Solute.coordination
 
     coordination_numbers: dict[str, float] | None = Field(
         None,
@@ -165,10 +108,6 @@ class SolvationDoc(BaseModel):
         "the mean coordination number of that residue.",
     )
 
-    # coordination_numbers_by_frame: DataFrame | None= Field(
-    #     None,
-    #     description="Coordination number in each frame of the trajectory.",
-    # )
 
     coordinating_atoms: DataFrame | None = Field(
         None,
@@ -181,16 +120,7 @@ class SolvationDoc(BaseModel):
         description="Coordination number relative to random coordination.",
     )
 
-    # Solute.networking
 
-    # TODO: In the worst case, this could be extremely large.
-    #       Need to consider what else we might want from this object.
-    # network_df: DataFrame | None= Field(
-    #     None,
-    #     description="All solute-solvent networks in the system, "
-    # .    "indexed by the `frame` and a 'network_ix'. "
-    #     "Columns are the species name and res_ix.",
-    # )
 
     network_sizes: DataFrame | None = Field(
         None,
@@ -213,19 +143,12 @@ class SolvationDoc(BaseModel):
         "solute, network size >= 3.",
     )
 
-    # solute_status_by_frame: DataFrame | None= Field(
-    #     None, description="Solute status in each frame of the trajectory."
-    # )
 
-    # Solute.pairing
 
     solvent_pairing: dict[str, float] | None = Field(
         None, description="Fraction of each solvent coordinated to the solute."
     )
 
-    # pairing_by_frame: DataFrame | None= Field(
-    #     None, description="Solvent pairing in each frame."
-    # )
 
     fraction_free_solvents: dict[str, float] | None = Field(
         None, description="Fraction of each solvent not coordinated to solute."
@@ -235,15 +158,11 @@ class SolvationDoc(BaseModel):
         None, description="Fraction of diluent constituted by each solvent."
     )
 
-    # diluent_composition_by_frame: DataFrame | None= Field(
-    #     None, description="Diluent composition in each frame."
-    # )
 
     diluent_counts: DataFrame | None = Field(
         None, description="Solvent counts in each frame."
     )
 
-    # Solute.residence
 
     residence_times: dict[str, float] | None = Field(
         None,
@@ -257,7 +176,6 @@ class SolvationDoc(BaseModel):
         "Calculated by fitting the autocovariance function to an exponential decay.",
     )
 
-    # Solute.speciation
 
     speciation_fraction: DataFrame | None = Field(
         None, description="Fraction of shells of each type."
@@ -287,41 +205,4 @@ class SolvationDoc(BaseModel):
         job_uuid: str | None = None,
         flow_uuid: str | None = None,
     ) -> SolvationDoc:
-        """Create a SolvationDoc from openmm Solute."""
-        # as a dict
-        props = {
-            "solute_name": solute.solute_name,
-            "solvent_names": list(solute.solvents.keys()),
-            "is_electrolyte": True,
-            "job_uuid": job_uuid,
-            "flow_uuid": flow_uuid,
-        }
-        if hasattr(solute, "coordination"):
-            for k in (
-                "coordination_numbers",
-                "coordinating_atoms",
-                "coordination_vs_random",
-            ):
-                props[k] = getattr(solute.coordination, k, None)
-        if hasattr(solute, "pairing"):
-            for k in (
-                "solvent_pairing",
-                "fraction_free_solvents",
-                "diluent_composition",
-                "diluent_counts",
-            ):
-                props[k] = getattr(solute.pairing, k, None)
-        if hasattr(solute, "speciation"):
-            for k in ("speciation_fraction", "solvent_co_occurrence"):
-                props[k] = getattr(solute.speciation, k, None)
-        if hasattr(solute, "networking"):
-            for k in ("network_sizes", "solute_status"):
-                props[k] = getattr(solute.networking, k, None)
-        if hasattr(solute, "residence"):
-            for k, v in {
-                "residence_times_cutoff": "residence_times",
-                "residence_times_fit": "residence_times_fit",
-            }.items():
-                props[v] = getattr(solute.residence, k, None)
-
-        return SolvationDoc(**props)
+        pass

@@ -1,4 +1,3 @@
-"""Module defining molecular dynamics jobs."""
 
 from __future__ import annotations
 
@@ -35,39 +34,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MDMaker(BaseVaspMaker):
-    """
-    Maker to create VASP molecular dynamics jobs.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .VaspInputSetGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_vasp_input_set`.
-    copy_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_vasp_outputs`.
-    run_vasp_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_vasp`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDoc.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "molecular dynamics"
 
     input_set_generator: VaspInputGenerator = field(default_factory=MDSetGenerator)
 
-    # Explicitly pass the handlers to not use the default ones. Some default handlers
-    # such as PotimErrorHandler do not apply to MD runs.
     run_vasp_kwargs: dict = field(
         default_factory=lambda: {
             "handlers": (
@@ -82,8 +53,6 @@ class MDMaker(BaseVaspMaker):
         }
     )
 
-    # Store ionic steps info in a pymatgen Trajectory object instead of in the output
-    # document.
     task_document_kwargs: dict = field(
         default_factory=lambda: {"store_trajectory": StoreTrajectoryOption.PARTIAL}
     )

@@ -1,4 +1,3 @@
-"""Core definitions of a JDFTx calculation document."""
 
 import logging
 from pathlib import Path
@@ -17,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class Convergence(BaseModel):
-    """Schema for calculation convergence."""
 
     converged: bool = Field(
         default=True, description="Whether the JDFTx calculation converged"
@@ -54,7 +52,6 @@ class Convergence(BaseModel):
 
 
 class RunStatistics(BaseModel):
-    """JDFTx run statistics."""
 
     total_time: float | None = Field(
         0, description="Total wall time for this calculation"
@@ -69,7 +66,6 @@ class RunStatistics(BaseModel):
 
 
 class CalculationInput(BaseModel):
-    """Document defining JDFTx calculation inputs."""
 
     structure: Structure = Field(
         None, description="input structure to JDFTx calculation"
@@ -98,7 +94,6 @@ class CalculationInput(BaseModel):
 
 
 class CalculationOutput(BaseModel):
-    """Document defining JDFTx calculation outputs."""
 
     structure: Structure | None = Field(
         None,
@@ -165,7 +160,6 @@ class CalculationOutput(BaseModel):
         energy_type = jdftxoutput.eopt_type
         mu = jdftxoutput.mu
         lowdin_charges = optimized_structure.site_properties.get("charges", None)
-        # total charge in number of electrons (negative of oxidation state)
         total_charge = (
             jdftxoutput.total_electrons_uncharged - jdftxoutput.total_electrons
         )
@@ -194,7 +188,6 @@ class CalculationOutput(BaseModel):
 
 
 class Calculation(BaseModel):
-    """Full JDFTx calculation inputs and outputs."""
 
     dir_name: str = Field(None, description="The directory for this JDFTx calculation")
     input: CalculationInput = Field(
@@ -221,7 +214,6 @@ class Calculation(BaseModel):
         jdftxoutput_file: Path | str,
         jdftxinput_kwargs: dict | None = None,
         jdftxoutput_kwargs: dict | None = None,
-        # **jdftx_calculation_kwargs, #TODO implement optional calcdoc kwargs
     ) -> "Calculation":
         """
         Create a JDFTx calculation document from a directory and file paths.
@@ -290,7 +282,6 @@ def _task_type(
         return TaskType("Lattice Optimization")
     if jdftxoutput.get("geom_opt_type") == "ionic":
         return TaskType("Ionic Optimization")
-    # TODO implement MD and frequency task types. Waiting on output parsers
 
     return TaskType("Unknown")
 

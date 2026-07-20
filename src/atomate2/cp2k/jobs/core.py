@@ -1,4 +1,3 @@
-"""Core jobs for running CP2K calculations."""
 
 from __future__ import annotations
 
@@ -42,32 +41,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class StaticMaker(BaseCp2kMaker):
-    """
-    Maker to create CP2K static jobs.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .Cp2kInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_cp2k_input_set`.
-    copy_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_cp2k_outputs`.
-    run_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_cp2k`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDocument.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "static"
     input_set_generator: Cp2kInputGenerator = field(default_factory=StaticSetGenerator)
@@ -75,32 +48,6 @@ class StaticMaker(BaseCp2kMaker):
 
 @dataclass
 class RelaxMaker(BaseCp2kMaker):
-    """
-    Maker to create CP2K relaxation jobs.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .Cp2kInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_cp2k_input_set`.
-    copy_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_cp2k_outputs`.
-    run_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_cp2k`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDocument.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "relax"
     input_set_generator: Cp2kInputGenerator = field(default_factory=RelaxSetGenerator)
@@ -108,32 +55,6 @@ class RelaxMaker(BaseCp2kMaker):
 
 @dataclass
 class CellOptMaker(BaseCp2kMaker):
-    """
-    Maker to create CP2K cell optimization jobs.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .Cp2kInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_cp2k_input_set`.
-    copy_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_cp2k_outputs`.
-    run_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_cp2k`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDocument.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "relax"
     input_set_generator: Cp2kInputGenerator = field(default_factory=CellOptSetGenerator)
@@ -141,34 +62,6 @@ class CellOptMaker(BaseCp2kMaker):
 
 @dataclass
 class HybridStaticMaker(BaseCp2kMaker):
-    """
-    Maker for static hybrid jobs.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    hybrid_functional : str
-        Built-in hybrid functional to use.
-    input_set_generator : .Cp2kInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_cp2k_input_set`.
-    copy_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_cp2k_outputs`.
-    run_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_cp2k`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDocument.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "hybrid static"
     input_set_generator: Cp2kInputGenerator = field(
@@ -178,34 +71,6 @@ class HybridStaticMaker(BaseCp2kMaker):
 
 @dataclass
 class HybridRelaxMaker(BaseCp2kMaker):
-    """
-    Maker for relax hybrid jobs.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    hybrid_functional : str
-        Built-in hybrid functional to use.
-    input_set_generator : .Cp2kInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_cp2k_input_set`.
-    copy_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_cp2k_outputs`.
-    run_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_cp2k`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDocument.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "hybrid relax"
     input_set_generator: Cp2kInputGenerator = field(
@@ -215,34 +80,6 @@ class HybridRelaxMaker(BaseCp2kMaker):
 
 @dataclass
 class HybridCellOptMaker(BaseCp2kMaker):
-    """
-    Maker for cell opt. hybrid jobs.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    hybrid_functional : str
-        Built-in hybrid functional to use.
-    input_set_generator : .Cp2kInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_cp2k_input_set`.
-    copy_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_cp2k_outputs`.
-    run_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_cp2k`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDocument.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "hybrid cell opt"
     input_set_generator: Cp2kInputGenerator = field(
@@ -252,37 +89,10 @@ class HybridCellOptMaker(BaseCp2kMaker):
 
 @dataclass
 class NonSCFMaker(BaseCp2kMaker):
-    """
-    Maker to create non self consistent field CP2K jobs.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    input_set_generator : .Cp2kInputGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_cp2k_input_set`.
-    copy_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_cp2k_outputs`.
-    run_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_cp2k`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDocument.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "non-scf"
     input_set_generator: Cp2kInputGenerator = field(default_factory=NonSCFSetGenerator)
 
-    # Explicitly pass the handlers to avoid the unconverged scf handler
     run_cp2k_kwargs: dict = field(
         default_factory=lambda: {
             "handlers": (
@@ -318,10 +128,8 @@ class NonSCFMaker(BaseCp2kMaker):
         """
         self.input_set_generator.mode = mode
 
-        # parse DOS only for uniform band structure
         self.task_document_kwargs.setdefault("parse_dos", mode == "uniform")
         self.task_document_kwargs.setdefault("parse_bandstructure", mode)
-        # copy previous inputs
         self.copy_cp2k_kwargs.setdefault("additional_cp2k_files", ("wfn",))
 
         return super().make.original(self, structure, prev_dir)
@@ -329,42 +137,6 @@ class NonSCFMaker(BaseCp2kMaker):
 
 @dataclass
 class TransmuterMaker(BaseCp2kMaker):
-    """
-    A maker to apply transformations to a structure before writing the input sets.
-
-    Note that if a transformation yields many structures, only the last structure in the
-    list is used.
-
-    Parameters
-    ----------
-    name : str
-        The job name.
-    transformations : tuple of str
-        The transformations to apply. Given as a list of names of transformation classes
-        as defined in the modules in pymatgen.transformations. For example,
-        ``['DeformStructureTransformation', 'SupercellTransformation']``.
-    transformation_params : tuple of dict or None
-        The parameters used to instantiate each transformation class. Given as a list of
-        dicts.
-    input_set_generator : StaticSetGenerator
-        A generator used to make the input set.
-    write_input_set_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.write_cp2k_input_set`.
-    copy_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.copy_cp2k_outputs`.
-    run_cp2k_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.run_cp2k`.
-    task_document_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.TaskDocument.from_directory`.
-    stop_children_kwargs : dict
-        Keyword arguments that will get passed to :obj:`.should_stop_children`.
-    write_additional_data : dict
-        Additional data to write to the current directory. Given as a dict of
-        {filename: data}. Note that if using FireWorks, dictionary keys cannot contain
-        the "." character which is typically used to denote file extensions. To avoid
-        this, use the ":" character, which will automatically be converted to ".". E.g.
-        ``{"my_file:txt": "contents of the file"}``.
-    """
 
     name: str = "transmuter"
     transformations: tuple[str, ...] = field(default_factory=tuple)
@@ -393,7 +165,6 @@ class TransmuterMaker(BaseCp2kMaker):
         transmuter = StandardTransmuter([ts], transformations)
         structure = transmuter.transformed_structures[-1].final_structure
 
-        # to avoid MongoDB errors, ":" is automatically converted to "."
         tjson = transmuter.transformed_structures[-1]
         self.write_additional_data.setdefault("transformations:json", tjson)
 
@@ -402,19 +173,6 @@ class TransmuterMaker(BaseCp2kMaker):
 
 @dataclass
 class MDMaker(BaseCp2kMaker):
-    """
-    Maker for creating MD jobs.
-
-    Parameters
-    ----------
-    name
-        The job name.
-    input_set_generator
-        A generator used to make the input set.
-    task_document_kwargs
-        Task document kwargs to pass to the base maker. By default
-        this maker will turn-on the storing of a trajectory.
-    """
 
     name: str = "md"
     input_set_generator: Cp2kInputGenerator = field(default_factory=MDSetGenerator)

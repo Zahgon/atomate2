@@ -1,4 +1,3 @@
-"""Core definition of a CP2K task document."""
 
 import logging
 from collections import OrderedDict
@@ -35,7 +34,6 @@ _VOLUMETRIC_FILES = ("v_hartree", "ELECTRON_DENSITY", "SPIN_DENSITY")
 
 
 class AnalysisSummary(BaseModel):
-    """Calculation relaxation summary."""
 
     delta_volume: float = Field(None, description="Absolute change in volume")
     delta_volume_as_percent: float = Field(
@@ -81,7 +79,6 @@ class AnalysisSummary(BaseModel):
         final_calc = calc_docs[-1]
         max_force = None
         if final_calc.has_cp2k_completed == Status.SUCCESS:
-            # max force and valid structure checks
             structure = final_calc.output.structure
             max_force = _get_max_force(final_calc)
             if not structure.is_valid():
@@ -97,7 +94,6 @@ class AnalysisSummary(BaseModel):
 
 
 class AtomicKind(BaseModel):
-    """A representation of the most important information about each type of species."""
 
     element: str = Field(None, description="Element assigned to this atom kind")
     basis: str = Field(None, description="Basis set for this atom kind")
@@ -111,7 +107,6 @@ class AtomicKind(BaseModel):
 
 
 class AtomicKindSummary(BaseModel):
-    """A summary of pseudo-potential type and functional."""
 
     atomic_kinds: dict[str, AtomicKind] = Field(
         None, description="dictionary mapping atomic kind labels to their info"
@@ -135,7 +130,6 @@ class AtomicKindSummary(BaseModel):
 
 
 class InputSummary(BaseModel):
-    """Summary of inputs for a CP2K calculation."""
 
     structure: Union[Structure, Molecule] = Field(
         None, description="The input structure object"
@@ -174,7 +168,6 @@ class InputSummary(BaseModel):
 
 
 class OutputSummary(BaseModel):
-    """Summary of the outputs for a CP2K calculation."""
 
     structure: Union[Structure, Molecule] = Field(
         None, description="The output structure object"
@@ -214,10 +207,6 @@ class OutputSummary(BaseModel):
         if calc_doc.output.ionic_steps:  # also handles for static calculations
             final_step = calc_doc.output.ionic_steps[-1]
             forces = final_step.get("forces")
-            # 2024-11-14 @janosh this method used to read "stress" from final_step
-            # (still read as fallback). CP2K docs don't mention "stress", only
-            # "stress_tensor". Unclear if this was a breaking change in CP2K or
-            # should always have been stress_tensor in this code.
             stress = final_step.get("stress_tensor", final_step.get("stress"))
         else:
             forces = None
@@ -235,7 +224,6 @@ class OutputSummary(BaseModel):
 
 
 class TaskDocument(StructureMetadata, MoleculeMetadata):
-    """Definition of CP2K task document."""
 
     dir_name: str | None = Field(None, description="The directory for this CP2K task")
     last_updated: str = Field(
@@ -367,8 +355,6 @@ class TaskDocument(StructureMetadata, MoleculeMetadata):
 
         dir_name = get_uri(dir_name)  # convert to full uri path
 
-        # only store objects from last calculation
-        # TODO: make this an option
         cp2k_objects = all_cp2k_objects[-1]
         included_objects = None
         if cp2k_objects:
@@ -441,7 +427,6 @@ class TaskDocument(StructureMetadata, MoleculeMetadata):
             "composition": calc_docs[-1].output.structure.composition,
             "energy": calc_docs[-1].output.energy,
             "parameters": {
-                # Required to be compatible with MontyEncoder for the ComputedEntry
                 "run_type": str(calc_docs[-1].run_type),
             },
             "data": {
@@ -498,7 +483,6 @@ def _find_cp2k_files(
                 vol_files.append(_files[0])
 
         if len(vol_files) > 0:
-            # add volumetric files if some were found or other cp2k files were found
             cp2k_files["volumetric_files"] = vol_files
 
         return cp2k_files
@@ -507,16 +491,13 @@ def _find_cp2k_files(
         subfolder_match = list(path.glob(f"{task_name}/*"))
         suffix_match = list(path.glob(f"*.{task_name}*"))
         if len(subfolder_match) > 0:
-            # subfolder match
             task_files[task_name] = _get_task_files(subfolder_match)
         elif len(suffix_match) > 0:
-            # try extension schema
             task_files[task_name] = _get_task_files(
                 suffix_match, suffix=f".{task_name}"
             )
 
     if len(task_files) == 0:
-        # get any matching file from the root folder
         standard_files = _get_task_files(list(path.glob("*")))
         if len(standard_files) > 0:
             task_files["standard"] = standard_files

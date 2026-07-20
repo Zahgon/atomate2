@@ -1,4 +1,3 @@
-"""Schemas for anharmonicity quantification."""
 
 import logging
 from typing import Any
@@ -14,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class AnharmonicityDoc(StructureMetadata):
-    """Collection to store data from anharmonicity workflow."""
 
     phonon_doc: PhononBSDOSDoc | None = Field(
         None, description="Collection of data from phonon part of the workflow"

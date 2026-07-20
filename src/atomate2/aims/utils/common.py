@@ -1,4 +1,3 @@
-"""Module with common file names and classes used for FHI-aims flows."""
 
 import contextlib
 import os
